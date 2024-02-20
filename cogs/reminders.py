@@ -21,8 +21,11 @@ class ReminderCog(commands.Cog):
         self.bot = bot
 
         # load reminders
-        with open('reminders.json', 'r') as f:
-            self.db = json.load(f, object_hook=date_hook)
+        try:
+            with open('reminders.json', 'r') as f:
+                self.db = json.load(f, object_hook=date_hook)
+        except FileNotFoundError:
+            self.db = {'users': {}}
 
         # remove expired reminders
         now = datetime.datetime.now(datetime.timezone.utc).astimezone()
