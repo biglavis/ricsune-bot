@@ -44,7 +44,7 @@ class ReminderCog(commands.Cog):
         print(f'cog: {self.qualified_name} loaded')
 
     def add_user(self, id: int):
-        self.db['users'][f'{id}'] = {'reminders': [], 'recent': {'modified': None, 'reminder': None}}
+        self.db['users'][f'{id}'] = {'reminders': []}
         with open('reminders.json', 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
@@ -90,11 +90,7 @@ class ReminderCog(commands.Cog):
             return
 
         # add reminder
-        user['reminders'].append({'time': time, 'task': task, 'url': url, 'created': now})
-
-        # update recent
-        user['recent']['modified'] = now
-        user['recent']['reminder'] = user['reminders'][-1]
+        user['reminders'].append({'time': time, 'task': task, 'url': url, 'created': now, 'modified': now})
 
         # sort reminders by time
         user['reminders'] = sorted(user['reminders'], key=lambda x: x['time'])
@@ -158,25 +154,24 @@ class ReminderCog(commands.Cog):
         
         # get recent
         if index == None:
-            if len(user['reminders']) == 1:
-                index = 1
-            elif now - user['recent']['modified'] < timedelta(minutes=3) and user['recent']['reminder'] in user['reminders']:
-                index = user['reminders'].index(user['recent']['reminder']) + 1
+            recent = sorted(user['reminders'], key=lambda x: x['modified'])[-1]
+
+            if now - recent['modified'] < timedelta(minutes=3):
+                index = user['reminders'].index(recent) + 1
             else:
                 await self.error(ctx, "Reminder not found.")
-                return
-
+                return 
+        
         # if invalid index
         elif abs(index) > len(user['reminders']):
             await self.error(ctx, "Invalid index.")
             return
-
-        # get index
+        
+        # get reminder
         reminder = user['reminders'][abs(index)-1]
 
-        # update recent
-        user['recent']['modified'] = now
-        user['recent']['reminder'] = reminder
+        # update modified
+        user['reminders'][abs(index)-1]['modified'] = now
         
         # save reminders
         with open('reminders.json', 'w') as f:
@@ -200,7 +195,7 @@ class ReminderCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.hybrid_command(description='/rm {indexes} to delete reminder(s). /rm {all} to clear all reminders.')
-    async def rm(self, ctx: commands.Context, *, indexes: str = ""):
+    async def rm(self, ctx: commands.Context, *, indexes: str = None):
 
         id = ctx.author.id
         now = ctx.message.created_at.astimezone().replace(microsecond=0)
@@ -216,23 +211,22 @@ class ReminderCog(commands.Cog):
             return
         
         # delete recent
-        elif indexes == "":
-            if len(user['reminders']) == 1:
-                indexes = [1]
-            elif now - user['recent']['modified'] < timedelta(minutes=3) and user['recent']['reminder'] in user['reminders']:
-                indexes = [user['reminders'].index(user['recent']['reminder']) + 1]
+        elif indexes == None:
+            recent = sorted(user['reminders'], key=lambda x: x['modified'])[-1]
+
+            if now - recent['modified'] < timedelta(minutes=3):
+                indexes = [user['reminders'].index(recent) + 1]
             else:
                 await self.error(ctx, "Reminder not found.")
-                return
+                return 
 
         # delete all
         elif matched := re.search(r"all", indexes):
-            indexes = [i for i in range(1, len(user['reminders']) + 1)]
+            indexes = list(range(1, len(user['reminders']) + 1))
 
         # delete indexed
         elif matched := re.findall(r"\d+", indexes):
             indexes = [int(i) for i in matched if int(i) <= len(user['reminders'])]
-            indexes = list(set(indexes))
             indexes.sort()
 
         # if invalid index
@@ -248,7 +242,7 @@ class ReminderCog(commands.Cog):
         reminders = [user['reminders'][(i-1)] for i in indexes]
         
         # delete reminders
-        for i, reminder in zip(indexes,reminders):
+        for reminder in reminders:
             user['reminders'].remove(reminder)
 
         # save reminders
