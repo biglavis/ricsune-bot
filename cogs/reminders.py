@@ -68,7 +68,7 @@ class ReminderCog(commands.Cog):
                         "/remindme at 5pm on sept 21\n"
                         "/remindme thursday at 3:45 do laundry\n"
                         "/remindme on january 6 2021 raid capitol\n"
-                        "/remindme feb 14 8am kiss the homies\n")
+                        "/remindme tmr 8am kiss the homies\n")
 
             units = ("```y : years | mo : months | w : weeks | d : days\n"
                      "h : hours | m : minutes | s : seconds```"

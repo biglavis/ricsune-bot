@@ -18,7 +18,7 @@ def parse_time(string: str, time_ref: datetime.datetime = datetime.datetime.now(
         return time_ref + match[0], match[1].replace('\n', ' ').strip()
     
     # match date/time/weekday
-    while (match := match_time(string)) or (match := match_date(string)) or (match := match_weekday(string)):
+    while (match := match_date(string)) or (match := match_time(string)) or (match := match_weekday(string)):
         time_dict.update(match[0])
         string = match[1]
 
