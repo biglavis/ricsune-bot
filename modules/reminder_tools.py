@@ -11,37 +11,23 @@ def parse_time(string: str, time_ref: datetime.datetime = datetime.datetime.now(
         :class:`datetime`: time relative to the reference time.
         :class:`string`: remaining string.
     '''
-    time_dict = {'hour': None, 'minute': None, 'period': None}
-    date_dict = {'month': None, 'day': None, 'year': None}
-    weekday = None
+    time_dict = {'month': None, 'day': None, 'year': None, 'hour': None, 'minute': None, 'period': None, 'weekday': None}
 
-    # if timedelta is matched
+    # match timedelta
     if match := match_timedelta(string):
         return time_ref + match[0], match[1].replace('\n', ' ').strip()
     
-    if match := match_time(string):
-        time_dict, string = match
-    
-    if match := match_date(string):
-        date_dict, string = match
+    # match date/time/weekday
+    while (match := match_time(string)) or (match := match_date(string)) or (match := match_weekday(string)):
+        time_dict.update(match[0])
+        string = match[1]
 
-        if match := match_time(string):
-            time_dict, string = match
-
-    elif match := match_weekday(string):
-        weekday, string = match
-
-        if match := match_time(string):
-            time_dict, string = match
-
-    # if weekday was matched
-    if weekday != None:
-        date = interpret_time(**time_dict, time_ref=time_ref) + relativedelta(weekday=weekday)
-
-    # if date/time was matched
-    elif not all(value == None for value in {**date_dict, **time_dict}.values()):
-        date = interpret_time(**date_dict, **time_dict, time_ref=time_ref)
-
+    # if date/time/weekday was matched
+    if not all(value == None for value in time_dict.values()):
+        if time_dict['weekday'] == 'tmr':
+            time_dict['weekday'] = time_ref.weekday() + 1
+        date = interpret_time(**time_dict, time_ref=time_ref)
+        
     else:
         raise ValueError("Invalid string format.")
     
@@ -73,7 +59,10 @@ def parse(string: str):
         'thu': 3,
         'fri': 4,
         'sat': 5,
-        'sun': 6
+        'sun': 6,
+
+        'tmr': 'tmr',
+        'tom': 'tmr'
     }
 
     if string == None:
@@ -131,7 +120,7 @@ def match_time(string: str):
 def match_date(string: str):
     '''
     If date is found at beginning of string:
-        return tuple( `date_dict`, `remaining string` )
+        return tuple( `time_dict`, `remaining string` )
     Else:
         return `None`
     '''
@@ -140,10 +129,10 @@ def match_date(string: str):
     if (match := re.match(date_pattern, string, flags=re.I)):
         matched = [parse(m) for m in match.groups()]
 
-        date_dict = {i: j for i, j in zip(['month', 'day', 'year'], matched)}
+        time_dict = {i: j for i, j in zip(['month', 'day', 'year'], matched)}
         string = string[match.end():]
 
-        return date_dict, string
+        return time_dict, string
     
     else:
         return None
@@ -151,17 +140,17 @@ def match_date(string: str):
 def match_weekday(string: str):
     '''
     If weekday is found at beginning of string:
-        return tuple( `weekday`, `remaining string` )
+        return tuple( `time_dict`, `remaining string` )
     Else:
         return `None`
     '''
-    weekday_pattern = r"\s*(?:on\s?)?(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s*"
+    weekday_pattern = r"\s*(?:on\s?)?(mon|tue|wed|thu|fri|sat|sun|tmr|tom)[a-z]*\s*"
 
     if (match := re.match(weekday_pattern, string, flags=re.I)):
-        weekday = parse(match.groups()[0])
+        time_dict = {'weekday': parse(match.groups()[0])}
         string = string[match.end():]
 
-        return weekday, string
+        return time_dict, string
     
     else:
         return None
@@ -195,12 +184,15 @@ def to_timedelta(amount, unit):
         raise ValueError("Invalid unit.")
     
 def interpret_time(month: int = None, day: int = None, year: int = None, 
-                   hour: int = None, minute: int = None, period: str = None, 
+                   hour: int = None, minute: int = None, period: str = None,
+                   weekday: int = None, 
                    time_ref: datetime.datetime = datetime.datetime.now(datetime.timezone.utc).astimezone()):
     '''
     Returns the earliest possible date with the given time information.
     
     Date is determined with respect to the refernce time (default: `datetime.datetime.now()`).
+
+    If hour/minute/period is not given, default is 12:00 AM.
 
     Returns
         :class:`datetime.datetime`: time relative to the reference time.
@@ -209,23 +201,18 @@ def interpret_time(month: int = None, day: int = None, year: int = None,
     loc = locals()
     time_dict = {i: loc[i] for i in ('year', 'month', 'day', 'hour', 'minute')}
 
-    date = midnight(time_ref).replace(**{i: time_dict[i] for i in time_dict if time_dict[i] != None})
+    date = midnight(time_ref).replace(**{i: time_dict[i] for i in time_dict if time_dict[i] != None}) + relativedelta(weekday=weekday)
 
     # apply corrections
-    if period == None and hour != None:
-        if timedelta() <= time_diff(time_ref.time(), date.time()) < timedelta(hours=12):
-            if date.hour in range(12, 24):
-                date -= timedelta(hours=12)
-            else:
-                date += timedelta(hours=12)
-
-    elif period == 'am' and date.hour in range(12, 24):
+    if period == 'am' and date.hour in range(12, 24):
         date -= timedelta(hours=12)
     elif period == 'pm' and date.hour in range(0, 12):
         date += timedelta(hours=12)
 
     if date <= time_ref:
-        if day == None and date + timedelta(days=1) > time_ref:
+        if period == None and date + timedelta(hours=12) > time_ref:
+            date += timedelta(hours=12)
+        elif day == None and date + timedelta(days=1) > time_ref:
             date += timedelta(days=1)
         elif month == None and date + relativedelta(months=+1) > time_ref:
             date += relativedelta(months=+1)
