@@ -2,6 +2,9 @@ import os
 from datetime import timedelta
 import yt_dlp
 
+import discord
+from discord.ext import commands
+
 MAX_SEARCH = 5
 YDL_OPTS = {
     'format': 'm4a/bestaudio/best',
@@ -15,8 +18,8 @@ YDL_OPTS = {
     'quiet': True
 }
 
-import discord
-from discord.ext import commands
+def parse(self, duration: int):
+    return f"{str(timedelta(seconds=duration)).lstrip(':0')}"
 
 class MusicCog(commands.Cog):
 
@@ -44,7 +47,7 @@ class MusicCog(commands.Cog):
                 # list search results
                 description = ""
                 for i, video in enumerate(videos):
-                    description += f"`[{i+1}]` [{video['title']}]({video['url']}) ({self.parse(video['duration'])})\n"
+                    description += f"`[{i+1}]` [{video['title']}]({video['url']}) ({parse(video['duration'])})\n"
 
                 embed = discord.Embed(title="Search Results:", description=description)
                 embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
@@ -66,18 +69,21 @@ class MusicCog(commands.Cog):
                 
                 video = videos[index]
 
+            # grab metadata
             url, title, duration, id = video['url'], video['title'], video['duration'], video['id']
             thumbnail = sorted(video['thumbnails'], key = lambda x: x['height'])[0]['url']
             user = ctx.author.display_name
 
+            # add to queue
             loc = locals()
             self.queue.append({i: loc[i] for i in ('url', 'title', 'duration', 'thumbnail', 'id', 'user')})
 
-            embed = discord.Embed(description=f"Added **[{title}]({url}) ({self.parse(duration)})** to the queue")
+            embed = discord.Embed(description=f"Added **[{title}]({url}) ({parse(duration)})** to the queue")
             embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
 
             await ctx.send(embed=embed)
 
+            # start playing
             if ctx.guild.voice_client not in self.bot.voice_clients:
                 await ctx.author.voice.channel.connect()
             if not ctx.voice_client.is_playing():
@@ -110,7 +116,7 @@ class MusicCog(commands.Cog):
             return
 
         description = f"**[{self.now_playing['title']}]({self.now_playing['url']})**\n"
-        description += f"**({self.parse(self.now_playing['duration'])})** \u00B7 Requested by {self.now_playing['user']}"
+        description += f"**({parse(self.now_playing['duration'])})** \u00B7 Requested by {self.now_playing['user']}"
         embed = discord.Embed(title="Now Playing", description=description)
         embed.set_thumbnail(url=self.now_playing['thumbnail'])
         runtime = self.now_playing['duration']
@@ -118,21 +124,21 @@ class MusicCog(commands.Cog):
         if self.queue:
             value = ""
             for i, song in enumerate(self.queue):
-                value += f"`[{i+1}]` [{song['title']}]({song['url']}) ({self.parse(song['duration'])})\n"
+                value += f"`[{i+1}]` [{song['title']}]({song['url']}) ({parse(song['duration'])})\n"
                 runtime += song['duration']
         else:
             value = "Queue is empty\n"
         value += "\nAdd a song with `/play`"
         embed.add_field(name="Next Up:", value=value, inline=False)
 
-        embed.set_footer(text=f"{len(self.queue)+1} Tracks" + " \u200b"*3 + f"({self.parse(runtime)})")
+        embed.set_footer(text=f"{len(self.queue)+1} Tracks" + " \u200b"*3 + f"({parse(runtime)})")
 
         await ctx.send(embed=embed)
 
     @commands.hybrid_command(description="Skip the current song.")
     async def skip(self, ctx: commands.Context):
         if ctx.guild.voice_client in self.bot.voice_clients and ctx.voice_client.is_playing():
-            embed = discord.Embed(description=f"Skipped **[{self.now_playing['title']}]({self.now_playing['url']}) ({self.parse(self.now_playing['duration'])})**")
+            embed = discord.Embed(description=f"Skipped **[{self.now_playing['title']}]({self.now_playing['url']}) ({parse(self.now_playing['duration'])})**")
             embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
 
             await ctx.send(embed=embed)
@@ -149,9 +155,6 @@ class MusicCog(commands.Cog):
         embed = discord.Embed(title="Woops...", description=description)
         embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
         await ctx.send(embed=embed)
-
-    def parse(self, duration: int):
-        return f"{str(timedelta(seconds=duration)).lstrip(':0')}"
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(MusicCog(bot))
