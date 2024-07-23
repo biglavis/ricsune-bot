@@ -46,10 +46,10 @@ class ToolCog(commands.Cog):
     async def clear(self, ctx: commands.Context, limit: int = None):
         await ctx.reply("Are you sure you want to run this command? (yes/no)")
 
-        def check(m: discord.Message): # checking if it's the same user and channel
+        def check(m: discord.Message): # check if it's the same user and channel
             return m.author == ctx.author and m.channel == ctx.channel
 
-        # waiting for message
+        # wait for response
         try:
             response = await self.bot.wait_for('message', check=check, timeout=30.0)
         except:
