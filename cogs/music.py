@@ -11,6 +11,7 @@ YDL_OPTS = {
     'noplaylist': True,
     'nocheckcertificate': True,
     'extract_flat': True,
+    'no_warnings': True,
     'quiet': True
 }
 
@@ -120,7 +121,8 @@ class MusicCog(commands.Cog):
                 value += f"`[{i+1}]` [{song['title']}]({song['url']}) ({self.parse(song['duration'])})\n"
                 runtime += song['duration']
         else:
-            value = "Queue is empty"
+            value = "Queue is empty\n"
+        value += "\nAdd a song with `/play`"
         embed.add_field(name="Next Up:", value=value, inline=False)
 
         embed.set_footer(text=f"{len(self.queue)+1} Tracks" + " \u200b"*3 + f"({self.parse(runtime)})")
