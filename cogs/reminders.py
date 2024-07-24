@@ -81,7 +81,7 @@ class ReminderCog(commands.Cog):
             embed.add_field(name="What (Optional)", value="{task}?\n{task}?\n{task}?\n{task}?", inline=True)
             embed.add_field(name="Examples", value=examples, inline=False)
             embed.add_field(name="Units", value=units, inline=False)
-            embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
+            embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
             
             await ctx.send(embed=embed)
             return
@@ -106,7 +106,7 @@ class ReminderCog(commands.Cog):
             reply += f'\n> *{task}*'
 
         embed = discord.Embed(title="Reminder Set", description=reply)
-        embed.set_footer(text=f"{ctx.author.display_name} \u00B7 /rm to delete this reminder", icon_url=ctx.author.avatar)
+        embed.set_footer(text=f"{ctx.author.display_name} \u00B7 /rm to delete this reminder", icon_url=ctx.author.guild_avatar)
 
         await ctx.send(embed=embed)
 
@@ -134,7 +134,7 @@ class ReminderCog(commands.Cog):
             embed = discord.Embed(title="Your Reminders:", description=description)
 
         embed.add_field(name="\u200b", value="`/info {index}` to get information about a reminder.\n`/rm {indexes}` to delete reminder(s).\n`/rm all` to delete all reminders.")
-        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar)
+        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
 
         await ctx.send(embed=embed)
 
@@ -193,7 +193,7 @@ class ReminderCog(commands.Cog):
         embed = discord.Embed(title="Reminder", description=reply)
         embed.add_field(name="Created", value=f'<t:{round(reminder["created"].timestamp())}:R>', inline=False)
         embed.add_field(name="Original Message", value=reminder['url'], inline=False)
-        embed.set_footer(text=f'{ctx.author.display_name} \u00B7 /rm to delete this reminder', icon_url=ctx.author.avatar) 
+        embed.set_footer(text=f'{ctx.author.display_name} \u00B7 /rm to delete this reminder', icon_url=ctx.author.guild_avatar) 
 
         await ctx.send(embed=embed)
 
@@ -261,7 +261,7 @@ class ReminderCog(commands.Cog):
                 description = description[:-1] + " \u200b"*5 + f'**>** *{reminder["task"]}*\n'
 
         embed = discord.Embed(title="Reminders Deleted", description=description)
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
+        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
 
         await ctx.send(embed=embed)
 
@@ -286,7 +286,7 @@ class ReminderCog(commands.Cog):
                         embed = discord.Embed(title="Reminder", timestamp=reminder["created"])
 
                     embed.add_field(name="Original Message", value=reminder['url'])
-                    embed.set_footer(text=f'{author.display_name}', icon_url=author.avatar)
+                    embed.set_footer(text=f'{author.display_name}', icon_url=author.guild_avatar)
 
                     # send reminder
                     await author.send(embed=embed)
@@ -304,7 +304,7 @@ class ReminderCog(commands.Cog):
 
 async def error(ctx: commands.Context, description: str):
     embed = discord.Embed(title="Woops...", description=description)
-    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
     await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):

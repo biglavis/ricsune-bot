@@ -39,7 +39,7 @@ async def on_command_error(ctx, exception):
 
 async def error(ctx: commands.Context, description: str):
         embed = discord.Embed(title="Woops...", description=description)
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
+        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
         await ctx.send(embed=embed)
 
 async def load():

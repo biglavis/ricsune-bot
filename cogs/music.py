@@ -50,7 +50,7 @@ class MusicCog(commands.Cog):
                     description += f"`[{i+1}]` [{video['title']}]({video['url']}) ({parse(video['duration'])})\n"
 
                 embed = discord.Embed(title="Search Results:", description=description)
-                embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
+                embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.guild_avatar)
 
                 await ctx.send(embed=embed)
 
@@ -79,7 +79,7 @@ class MusicCog(commands.Cog):
             self.queue.append({i: loc[i] for i in ('url', 'title', 'duration', 'thumbnail', 'id', 'user')})
 
             embed = discord.Embed(description=f"Added **[{title}]({url}) ({parse(duration)})** to the queue")
-            embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
+            embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.guild_avatar)
 
             await ctx.send(embed=embed)
 
@@ -141,7 +141,7 @@ class MusicCog(commands.Cog):
             return
         
         embed = discord.Embed(description=f"Skipped **[{self.now_playing['title']}]({self.now_playing['url']}) ({parse(self.now_playing['duration'])})**")
-        embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
+        embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.guild_avatar)
 
         await ctx.send(embed=embed)
 
@@ -155,7 +155,7 @@ class MusicCog(commands.Cog):
     
 async def error(ctx: commands.Context, description: str):
     embed = discord.Embed(title="Woops...", description=description)
-    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
     await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):
