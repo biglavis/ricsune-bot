@@ -18,7 +18,7 @@ YDL_OPTS = {
     'quiet': True
 }
 
-def parse(self, duration: int):
+def parse(duration: int):
     return f"{str(timedelta(seconds=duration)).lstrip(':0')}"
 
 class MusicCog(commands.Cog):

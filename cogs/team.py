@@ -16,6 +16,8 @@ class TeamCog(commands.Cog):
 
         self.participants = []
         for member in ctx.author.voice.channel.members:
+            if member.bot:
+                continue
             self.participants.append(member.mention)
 
         await self.lobby(ctx)
