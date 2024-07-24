@@ -32,7 +32,7 @@ class MusicCog(commands.Cog):
     @commands.hybrid_command(description="Add a song to the queue.")
     async def play(self, ctx: commands.Context, *, song: str):
         if not (ctx.guild.voice_client in self.bot.voice_clients or ctx.author.voice):
-            await self.error(ctx, "You are not in a voice channel.")
+            await error(ctx, "You are not in a voice channel.")
             return
     
         with yt_dlp.YoutubeDL(YDL_OPTS) as ydl:
@@ -137,24 +137,27 @@ class MusicCog(commands.Cog):
 
     @commands.hybrid_command(description="Skip the current song.")
     async def skip(self, ctx: commands.Context):
-        if ctx.guild.voice_client in self.bot.voice_clients and ctx.voice_client.is_playing():
-            embed = discord.Embed(description=f"Skipped **[{self.now_playing['title']}]({self.now_playing['url']}) ({parse(self.now_playing['duration'])})**")
-            embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
+        if not (ctx.guild.voice_client in self.bot.voice_clients and ctx.voice_client.is_playing()):
+            return
+        
+        embed = discord.Embed(description=f"Skipped **[{self.now_playing['title']}]({self.now_playing['url']}) ({parse(self.now_playing['duration'])})**")
+        embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar)
 
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
-            ctx.voice_client.stop()
+        ctx.voice_client.stop()
 
     @commands.hybrid_command(description="Mic drop.")
     async def stop(self, ctx: commands.Context):
         self.queue = []
         if ctx.guild.voice_client in self.bot.voice_clients:
             await ctx.voice_client.disconnect()
-
-    async def error(self, ctx: commands.Context, description: str):
-        embed = discord.Embed(title="Woops...", description=description)
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
-        await ctx.send(embed=embed)
+    
+async def error(ctx: commands.Context, description: str):
+    embed = discord.Embed(title="Woops...", description=description)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
+    await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(MusicCog(bot))
+    

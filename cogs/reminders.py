@@ -56,7 +56,8 @@ class ReminderCog(commands.Cog):
         url = ctx.message.jump_url
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']: self.add_user(id)
+        if f'{id}' not in self.db['users']:
+            self.add_user(id)
 
         user = self.db['users'][f'{id}']
 
@@ -86,7 +87,7 @@ class ReminderCog(commands.Cog):
             return
         
         if time <= now:
-            await self.error(ctx, "I cannot work backwards... maybe one day.")
+            await error(ctx, "I cannot work backwards... maybe one day.")
             return
 
         # add reminder
@@ -115,7 +116,8 @@ class ReminderCog(commands.Cog):
         id = ctx.author.id
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']: self.add_user(id)
+        if f'{id}' not in self.db['users']:
+            self.add_user(id)
 
         user = self.db['users'][f'{id}']
 
@@ -143,13 +145,14 @@ class ReminderCog(commands.Cog):
         now = ctx.message.created_at.astimezone().replace(microsecond=0)
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']: self.add_user(id)
+        if f'{id}' not in self.db['users']:
+            self.add_user(id)
             
         user = self.db['users'][f'{id}']
 
         # if user has no reminders
         if len(user['reminders']) == 0:
-            await self.error(ctx, "You have no reminders.")
+            await error(ctx, "You have no reminders.")
             return 
         
         # get recent
@@ -159,12 +162,12 @@ class ReminderCog(commands.Cog):
             if now - recent['modified'] < timedelta(minutes=3):
                 index = user['reminders'].index(recent) + 1
             else:
-                await self.error(ctx, "Reminder not found.")
+                await error(ctx, "Reminder not found.")
                 return 
         
         # if invalid index
         elif abs(index) > len(user['reminders']):
-            await self.error(ctx, "Invalid index.")
+            await error(ctx, "Invalid index.")
             return
         
         # get reminder
@@ -201,13 +204,14 @@ class ReminderCog(commands.Cog):
         now = ctx.message.created_at.astimezone().replace(microsecond=0)
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']: self.add_user(id)
+        if f'{id}' not in self.db['users']:
+            self.add_user(id)
 
         user = self.db['users'][f'{id}']
 
         # if user has no reminders
         if len(user['reminders']) == 0:
-            await self.error(ctx, "You have no reminders.")
+            await error(ctx, "You have no reminders.")
             return
         
         # delete recent
@@ -217,7 +221,7 @@ class ReminderCog(commands.Cog):
             if now - recent['modified'] < timedelta(minutes=3):
                 indexes = [user['reminders'].index(recent) + 1]
             else:
-                await self.error(ctx, "Reminder not found.")
+                await error(ctx, "Reminder not found.")
                 return 
 
         # delete all
@@ -231,11 +235,11 @@ class ReminderCog(commands.Cog):
 
         # if invalid index
         else:
-            await self.error(ctx, "Invalid index.")
+            await error(ctx, "Invalid index.")
             return
         
         if len(indexes) == 0:
-            await self.error(ctx, "Invalid index.")
+            await error(ctx, "Invalid index.")
             return
         
         # get reminders
@@ -298,10 +302,10 @@ class ReminderCog(commands.Cog):
     async def before_remind(self):
         await self.bot.wait_until_ready()
 
-    async def error(self, ctx: commands.Context, description: str):
-        embed = discord.Embed(title="Woops...", description=description)
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
-        await ctx.send(embed=embed)
+async def error(ctx: commands.Context, description: str):
+    embed = discord.Embed(title="Woops...", description=description)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar)
+    await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ReminderCog(bot))
