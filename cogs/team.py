@@ -87,7 +87,7 @@ class TeamCog(commands.Cog):
 
         await ctx.send(embed=embed, silent=True)
 
-    @commands.hybrid_command("Destroy the current lobby")
+    @commands.hybrid_command(description="Destroy the current lobby")
     async def destroy(self, ctx: commands.context):
         if not self.participants:
             return
