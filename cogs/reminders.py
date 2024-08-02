@@ -48,7 +48,7 @@ class ReminderCog(commands.Cog):
         with open('reminders.json', 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
-    @commands.hybrid_command(description='Set a reminder.')
+    @commands.hybrid_command(brief='Set a reminder.', description='Set a reminder.')
     async def remindme(self, ctx: commands.Context, *, string: str = ""):
         
         id = ctx.author.id
@@ -110,7 +110,7 @@ class ReminderCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(description='Lists your reminders.')
+    @commands.hybrid_command(brief='List your reminders.', description='List your reminders.')
     async def reminders(self, ctx: commands.Context):
 
         id = ctx.author.id
@@ -138,7 +138,7 @@ class ReminderCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(description='Get information about a reminder.')
+    @commands.hybrid_command(brief='Get information about a reminder.', description='Get information about a reminder.')
     async def info(self, ctx: commands.Context, index: int = None):
 
         id = ctx.author.id
@@ -197,7 +197,7 @@ class ReminderCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(description='/rm {indexes} to delete reminder(s). /rm {all} to clear all reminders.')
+    @commands.hybrid_command(brief='Delete reminder(s).', description='/rm {indexes} to delete reminder(s). /rm {all} to clear all reminders.')
     async def rm(self, ctx: commands.Context, *, indexes: str = None):
 
         id = ctx.author.id

@@ -17,9 +17,13 @@ class ToolCog(commands.Cog):
     # checks if command was sent from MY_GUILD
     def is_guild(ctx: commands.Context):
         return ctx.guild.id == MY_GUILD
+    
+    @commands.hybrid_command(brief='Ping the bot.', description='Ping the bot.')
+    async def ping(self, ctx: commands.Context):
+        await ctx.reply(content=f'***Pong!*** ({round(self.bot.latency * 1000)}ms)')
 
     # sync commands to current server
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     @commands.cooldown(1, 90)
     async def sync(self, ctx: commands.Context):
@@ -28,27 +32,8 @@ class ToolCog(commands.Cog):
             fmt = await self.bot.tree.sync(guild=ctx.guild)
             await ctx.reply(content=f'Synced {len(fmt)} commands to the current server.')
 
-    @commands.hybrid_command(description='Ping the bot.')
-    async def ping(self, ctx: commands.Context):
-        await ctx.reply(content=f'***Pong!*** ({round(self.bot.latency * 1000)}ms)')
-
-    @commands.hybrid_command(description='Display the avatar of you or another member.')
-    async def avatar(self, ctx: commands.Context, member: discord.Member = None):
-        if member is None:
-            member = ctx.author
-        await ctx.reply(member.avatar)
-
-    @commands.hybrid_command(description='Display the server avatar of you or another member.')
-    async def savatar(self, ctx: commands.Context, member: discord.Member = None):
-        if member is None:
-            member = ctx.author
-        if not (avatar := member.guild_avatar):
-            avatar = member.avatar
-
-        await ctx.reply(avatar)
-
     # clears all messages in the current channel
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.check(is_guild)
     async def clear(self, ctx: commands.Context, limit: int = None):
         await ctx.reply("Are you sure you want to run this command? (yes/no)")
@@ -71,6 +56,21 @@ class ToolCog(commands.Cog):
 
         async with ctx.channel.typing():
             await ctx.channel.purge(limit=limit)
+
+    @commands.hybrid_command(brief='Display the avatar of you or another member.', description='Display the avatar of you or another member.')
+    async def avatar(self, ctx: commands.Context, member: discord.Member = None):
+        if member is None:
+            member = ctx.author
+        await ctx.reply(member.avatar)
+
+    @commands.hybrid_command(brief='Display the server avatar of you or another member.', description='Display the server avatar of you or another member.')
+    async def savatar(self, ctx: commands.Context, member: discord.Member = None):
+        if member is None:
+            member = ctx.author
+        if not (avatar := member.guild_avatar):
+            avatar = member.avatar
+
+        await ctx.reply(avatar)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ToolCog(bot))

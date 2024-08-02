@@ -29,7 +29,7 @@ class MusicCog(commands.Cog):
         self.now_playing = None
         print(f"cog: {self.qualified_name} loaded")
 
-    @commands.hybrid_command(description="Add a song to the queue.")
+    @commands.hybrid_command(brief="Add a song to the queue.", description="Add a song to the queue.")
     async def play(self, ctx: commands.Context, *, song: str):
         if not (ctx.guild.voice_client in self.bot.voice_clients or ctx.author.voice):
             await error(ctx, "You are not in a voice channel.")
@@ -108,7 +108,7 @@ class MusicCog(commands.Cog):
         else:
             self.now_playing = None
 
-    @commands.hybrid_command(description="See what's playing.")
+    @commands.hybrid_command(brief="See what's playing.", description="See what's playing.")
     async def playing(self, ctx: commands.Context):
         if not self.now_playing:
             embed = discord.Embed(title="Nothing is playing!", description="Add a song with `/play`")
@@ -135,7 +135,7 @@ class MusicCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(description="Skip the current song.")
+    @commands.hybrid_command(brief="Skip the current song.", description="Skip the current song.")
     async def skip(self, ctx: commands.Context):
         if not (ctx.guild.voice_client in self.bot.voice_clients and ctx.voice_client.is_playing()):
             return
@@ -147,7 +147,7 @@ class MusicCog(commands.Cog):
 
         ctx.voice_client.stop()
 
-    @commands.hybrid_command(description="Mic drop.")
+    @commands.hybrid_command(brief="Mic drop.", description="Mic drop.")
     async def stop(self, ctx: commands.Context):
         self.queue = []
         if ctx.guild.voice_client in self.bot.voice_clients:

@@ -40,9 +40,9 @@ async def on_command_error(ctx, exception):
     elif isinstance(exception, commands.errors.CommandError):
         await error(ctx, 'Something went wrong. That\'s all we know.')
 
-@bot.command()
+@bot.command(hidden=True)
 @commands.is_owner()
-async def reload(ctx: commands.Context,):
+async def reload(ctx: commands.Context):
     async with ctx.channel.typing():
         with open("temp.txt", 'w') as sys.stdout:
             for filename in os.listdir('./cogs'):

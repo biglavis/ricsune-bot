@@ -9,7 +9,7 @@ class TeamCog(commands.Cog):
         self.participants = []
         print(f"cog: {self.qualified_name} loaded")
 
-    @commands.hybrid_command(description="Create a new lobby from voice chat.")
+    @commands.hybrid_command(brief="Create a new lobby from voice chat.", description="Create a new lobby from voice chat.")
     async def make(self, ctx: commands.Context):
         if not ctx.author.voice:
             return
@@ -22,7 +22,7 @@ class TeamCog(commands.Cog):
 
         await self.lobby(ctx)
 
-    @commands.hybrid_command(description="See who's in the lobby.")
+    @commands.hybrid_command(brief="See who's in the lobby.", description="See who's in the lobby.")
     async def lobby(self, ctx: commands.context):
         if not self.participants:
             description = "`/make` to create a new lobby from voice chat\n`/add` to add participants to a lobby"
@@ -42,14 +42,14 @@ class TeamCog(commands.Cog):
         embed = discord.Embed(title="Participants", description=description)
         await ctx.send(embed=embed, silent=True) 
 
-    @commands.hybrid_command(description="Add a participant to the lobby.")
+    @commands.hybrid_command(brief="Add a participant to the lobby.", description="Add a participant to the lobby.")
     async def add(self, ctx: commands.context, name: str):
         self.participants.append(name)
         embed = discord.Embed(description=f"Added {name} to the lobby")
         embed.set_footer(text="/lobby to see who's in the lobby")
         await ctx.send(embed=embed, silent=True) 
 
-    @commands.hybrid_command(description="Kick a participant from the lobby.")
+    @commands.hybrid_command(brief="Kick a participant from the lobby.", description="Kick a participant from the lobby.")
     async def kick(self, ctx: commands.context, id: int):
         if not self.participants:
             return
@@ -61,7 +61,7 @@ class TeamCog(commands.Cog):
         embed.set_footer(text="/lobby to see who's in the lobby")
         await ctx.send(embed=embed, silent=True) 
 
-    @commands.hybrid_command(description="Create x random teams.")
+    @commands.hybrid_command(brief="Create x random teams.", description="Create x random teams.")
     async def teams(self, ctx: commands.context, x: int):
         if not self.participants:
             description = "`/make` to create a new lobby from voice chat\n`/add` to add participants to a lobby"
@@ -89,7 +89,7 @@ class TeamCog(commands.Cog):
 
         await ctx.send(embed=embed, silent=True)
 
-    @commands.hybrid_command(description="Destroy the current lobby.")
+    @commands.hybrid_command(brief="Destroy the current lobby.", description="Destroy the current lobby.")
     async def destroy(self, ctx: commands.context):
         if not self.participants:
             return
