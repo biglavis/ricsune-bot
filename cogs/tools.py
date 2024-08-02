@@ -28,7 +28,7 @@ class ToolCog(commands.Cog):
             fmt = await self.bot.tree.sync(guild=ctx.guild)
             await ctx.reply(content=f'Synced {len(fmt)} commands to the current server.')
 
-    @commands.command()
+    @commands.hybrid_command(description='Ping the bot.')
     async def ping(self, ctx: commands.Context):
         await ctx.reply(content=f'***Pong!*** ({round(self.bot.latency * 1000)}ms)')
 
