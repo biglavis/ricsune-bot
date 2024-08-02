@@ -28,6 +28,10 @@ class ToolCog(commands.Cog):
             fmt = await self.bot.tree.sync(guild=ctx.guild)
             await ctx.reply(content=f'Synced {len(fmt)} commands to the current server.')
 
+    @commands.command()
+    async def ping(self, ctx: commands.Context):
+        await ctx.reply(content=f'***Pong!*** ({round(self.bot.latency * 1000)}ms)')
+
     @commands.hybrid_command(description='Display the avatar of you or another member.')
     async def avatar(self, ctx: commands.Context, member: discord.Member = None):
         if member is None:
@@ -38,7 +42,10 @@ class ToolCog(commands.Cog):
     async def savatar(self, ctx: commands.Context, member: discord.Member = None):
         if member is None:
             member = ctx.author
-        await ctx.reply(member.guild_avatar)
+        if not (avatar := member.guild_avatar):
+            avatar = member.avatar
+
+        await ctx.reply(avatar)
 
     # clears all messages in the current channel
     @commands.command()

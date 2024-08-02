@@ -1,4 +1,5 @@
 import os
+import sys
 import asyncio
 import datetime
 from datetime import timedelta
@@ -28,19 +29,41 @@ async def on_ready():
 async def on_command_error(ctx, exception):
     if isinstance(exception, commands.errors.CommandNotFound):
         await error(ctx, "Command not found.")
+    elif isinstance(exception, commands.errors.MissingRequiredArgument):
+        await error(ctx, f'`{exception.param}` is a required argument that is missing.')
     elif isinstance(exception, commands.errors.NotOwner):
-        await error(ctx, f'You do not have access to this command.')
+        await error(ctx, 'You do not have access to this command.')
     elif isinstance(exception, commands.errors.CheckFailure):
-        await error(ctx, f'You do not have access to this command.')
+        await error(ctx, 'You do not have access to this command.')
     elif isinstance(exception, commands.errors.CommandOnCooldown):
         await error(ctx, f'Command is on cooldown.\nTry again <t:{round((datetime.datetime.now() + timedelta(seconds=exception.retry_after)).timestamp())}:R>.')
     elif isinstance(exception, commands.errors.CommandError):
-        await error(ctx, f'Something went wrong. That\'s all we know.')
+        await error(ctx, 'Something went wrong. That\'s all we know.')
+
+@bot.command()
+@commands.is_owner()
+async def reload(ctx: commands.Context,):
+    async with ctx.channel.typing():
+        with open("temp.txt", 'w') as sys.stdout:
+            for filename in os.listdir('./cogs'):
+                if filename.endswith('.py'):
+                    try:
+                        await bot.reload_extension(f'cogs.{filename[:-3]}')
+                    except:
+                        pass
+    
+    with open('temp.txt', 'r') as f:
+        await ctx.reply(content="".join(f.readlines()))
+
+    sys.stdout = sys.__stdout__
+    os.remove('temp.txt')
 
 async def error(ctx: commands.Context, description: str):
-        embed = discord.Embed(title="Woops...", description=description)
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
-        await ctx.send(embed=embed)
+    if not (avatar := ctx.author.guild_avatar):
+        avatar = ctx.author.avatar
+    embed = discord.Embed(title="Woops...", description=description)
+    embed.set_footer(text=ctx.author.display_name, icon_url=avatar)
+    await ctx.send(embed=embed)
 
 async def load():
     for filename in os.listdir('./cogs'):
