@@ -53,7 +53,7 @@ class RiotCog(commands.Cog):
 
         opgg_url = f"https://www.op.gg/summoners/na/{urllib.parse.quote(summoner['gameName'] + '-' + summoner['tagLine'])}"
 
-        embed = discord.Embed(title=f"**{summoner['gameName']}#{summoner['tagLine']}**", description=f"**Level: **{summoner['summonerLevel']}" + " \u200b"*5 + f"**[OP.GG]({opgg_url})**")
+        embed = discord.Embed(title=f"{summoner['gameName']} #{summoner['tagLine']}", description=f"**Level:** `{summoner['summonerLevel']}`" + " \u200b"*5 + f"**[OP.GG]({opgg_url})**")
         embed.set_thumbnail(url=riot.get_summoner_icon(summoner['profileIconId']))
         if member:
             embed.set_author(name=member.display_name, icon_url=member.display_avatar)
@@ -62,12 +62,23 @@ class RiotCog(commands.Cog):
         if stats := riot.get_stats_by_summoner(summoner['id']):
             for entry in [entry for entry in stats if "leagueId" in entry]:
                 embed.add_field(name=" ".join(entry['queueType'].split("_")[:-1]).title(), value=f"{entry['tier'].title()} {entry['rank']} `({entry['wins']}W|{entry['losses']}L)`")
+
+        # get champion stats
+        if masteries := riot.get_champion_masteries_by_puuid(summoner['puuid'], 3):
+            for i, mastery in enumerate(masteries):
+                if not (champion := riot.get_champion(mastery['championId'])):
+                    continue
+                if i == 0:
+                    embed.add_field(name="\t", value="\t", inline=False)
+                    embed.add_field(name="Highest Champion Mastery", value="\t", inline=False)
+
+                embed.add_field(name=champion['id'], value=f"Level: `{mastery['championLevel']}`\nPoints: `{mastery['championPoints']}`", inline=True)
         
         # get recent games
         if matchId := riot.get_matchId_by_puuid(summoner['puuid'], 3):
             def win_str(win: bool):
-                if win: return "W"
-                return "L"
+                if win: return "\u001b[0;34m[W]\u001b[0;0m"
+                return "\u001b[0;31m[L]\u001b[0;0m"
             
             def time_str(duration: int):
                 return f"{str(timedelta(seconds=duration)).lstrip(':0')}"
@@ -77,19 +88,24 @@ class RiotCog(commands.Cog):
                 if position == "UTILITY": return " (Support)"
                 return f" ({position.title()})"
             
-            matches = list(filter(None, [riot.get_match_by_matchId(id) for id in matchId]))
+            matches = list(filter(None, [riot.get_match_by_id(id) for id in matchId]))
             value = ""
             for matchDto in matches:
                 infoDto = matchDto['info']
                 participantDto = [participantDto for participantDto in infoDto['participants'] if participantDto['puuid'] == summoner['puuid']][0]
                 teamDto = [teamDto for teamDto in infoDto['teams'] if teamDto['teamId'] == participantDto['teamId']][0]
 
-                value += f"<t:{str(infoDto['gameCreation'] + infoDto['gameDuration']*1000)[:-3]}:R>\n"
-                value += f"```[{win_str(participantDto['win'])}] {infoDto['gameMode']} | {participantDto['championName']}{pos_str(participantDto['teamPosition'])} | {time_str(infoDto['gameDuration'])}\n"
-                value += f"KDA: {participantDto['kills']}/{participantDto['deaths']}/{participantDto['assists']} ({round(100 * (participantDto['kills'] + participantDto['assists']) / teamDto['objectives']['champion']['kills'])}%) | "
-                value += f"CS: {participantDto['totalMinionsKilled'] + participantDto['neutralMinionsKilled']}({round(60 * (participantDto['totalMinionsKilled'] + participantDto['neutralMinionsKilled']) / infoDto['gameDuration'], 1)}) | "
-                value += f"Gold: {participantDto['goldEarned']}```"
+                value += f"<t:{str(infoDto['gameCreation'] + infoDto['gameDuration']*1000)[:-3]}:R>\n"                                                                                  # {timestamp}
+                value += f"```ansi\n{win_str(participantDto['win'])} {infoDto['gameMode']} | "                                                                                          # {win/loss} {gamemode}
+                value += f"{participantDto['championName']}{pos_str(participantDto['teamPosition'])} | "                                                                                # {champion} {role}
+                value += f"{time_str(infoDto['gameDuration'])}\n"                                                                                                                       # {duration}
+                value += f"\u001b[0;36m{participantDto['kills']}/{participantDto['deaths']}/{participantDto['assists']}\u001b[0;0m "                                                    # {kda}
+                value += f"\u001b[0;30m({round(100 * (participantDto['kills'] + participantDto['assists']) / teamDto['objectives']['champion']['kills'])}%)\u001b[0;0m | "              # {kill participation}
+                value += f"CS: \u001b[0;36m{participantDto['totalMinionsKilled'] + participantDto['neutralMinionsKilled']}\u001b[0;0m"                                                  # {cs}
+                value += f"\u001b[0;30m({round(60 * (participantDto['totalMinionsKilled'] + participantDto['neutralMinionsKilled']) / infoDto['gameDuration'], 1)})\u001b[0;0m | "      # {cs/min}
+                value += f"Gold: \u001b[0;36m{participantDto['goldEarned']}\u001b[0;0m\n```"                                                                                            # {gold}
             
+            embed.add_field(name="\t", value="\t", inline=False)
             embed.add_field(name="Recent Games", value=value, inline=False)
 
         await ctx.send(embed=embed)
