@@ -1,5 +1,6 @@
 import re
 import json
+import urllib.parse
 from datetime import timedelta
 import modules.riot_tools as riot
 
@@ -50,7 +51,9 @@ class RiotCog(commands.Cog):
         
         summoner, member = tupl
 
-        embed = discord.Embed(title=f"**{summoner['gameName']}#{summoner['tagLine']}**", description=f"**Level: **{summoner['summonerLevel']}")
+        opgg_url = f"https://www.op.gg/summoners/na/{urllib.parse.quote(summoner['gameName'] + '-' + summoner['tagLine'])}"
+
+        embed = discord.Embed(title=f"**{summoner['gameName']}#{summoner['tagLine']}**", description=f"**Level: **{summoner['summonerLevel']}" + " \u200b"*5 + f"**[OP.GG]({opgg_url})**")
         embed.set_thumbnail(url=riot.get_summoner_icon(summoner['profileIconId']))
         if member:
             embed.set_author(name=member.display_name, icon_url=member.display_avatar)
