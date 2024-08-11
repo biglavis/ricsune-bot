@@ -38,7 +38,8 @@ async def on_command_error(ctx, exception):
     elif isinstance(exception, commands.errors.CommandOnCooldown):
         await error(ctx, f'Command is on cooldown.\nTry again <t:{round((datetime.datetime.now() + timedelta(seconds=exception.retry_after)).timestamp())}:R>.')
     elif isinstance(exception, commands.errors.CommandError):
-        await error(ctx, 'Something went wrong. That\'s all we know.')
+        #await error(ctx, 'Something went wrong. That\'s all we know.')
+        await error(ctx, exception)
 
 @bot.command(hidden=True)
 @commands.is_owner()
@@ -59,10 +60,8 @@ async def reload(ctx: commands.Context):
     os.remove('temp.txt')
 
 async def error(ctx: commands.Context, description: str):
-    if not (avatar := ctx.author.guild_avatar):
-        avatar = ctx.author.avatar
     embed = discord.Embed(title="Woops...", description=description)
-    embed.set_footer(text=ctx.author.display_name, icon_url=avatar)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
     await ctx.send(embed=embed)
 
 async def load():

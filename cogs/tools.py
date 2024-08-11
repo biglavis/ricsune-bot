@@ -67,10 +67,8 @@ class ToolCog(commands.Cog):
     async def savatar(self, ctx: commands.Context, member: discord.Member = None):
         if member is None:
             member = ctx.author
-        if not (avatar := member.guild_avatar):
-            avatar = member.avatar
 
-        await ctx.reply(avatar)
+        await ctx.reply(member.display_avatar)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ToolCog(bot))

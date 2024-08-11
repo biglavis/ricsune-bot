@@ -7,6 +7,8 @@ from modules.reminder_tools import parse_time
 import discord
 from discord.ext import commands, tasks
 
+JSON_PATH = 'json//reminders.json'
+
 def date_hook(json_dict):
     for (key, value) in json_dict.items():
         try:
@@ -22,20 +24,20 @@ class ReminderCog(commands.Cog):
 
         # load reminders
         try:
-            with open('reminders.json', 'r') as f:
+            with open(JSON_PATH, 'r') as f:
                 self.db = json.load(f, object_hook=date_hook)
         except FileNotFoundError:
-            self.db = {'users': {}}
+            self.db = {}
 
         # remove expired reminders
         now = datetime.datetime.now(datetime.timezone.utc).astimezone()
-        for id in self.db['users']:
-            expired = [reminder for reminder in self.db['users'][id]['reminders'] if reminder['time'] <= now]
+        for id in self.db:
+            expired = [reminder for reminder in self.db[id]['reminders'] if reminder['time'] <= now]
             for reminder in expired:
-                self.db['users'][id]['reminders'].remove(reminder)
+                self.db[id]['reminders'].remove(reminder)
 
         # save reminders
-        with open('reminders.json', 'w') as f:
+        with open(JSON_PATH, 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
         # start reminding
@@ -44,8 +46,8 @@ class ReminderCog(commands.Cog):
         print(f'cog: {self.qualified_name} loaded')
 
     def add_user(self, id: int):
-        self.db['users'][f'{id}'] = {'reminders': []}
-        with open('reminders.json', 'w') as f:
+        self.db[str(id)] = {'reminders': []}
+        with open(JSON_PATH, 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
     @commands.hybrid_command(brief='Set a reminder.', description='Set a reminder.')
@@ -56,10 +58,10 @@ class ReminderCog(commands.Cog):
         url = ctx.message.jump_url
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']:
+        if str(id) not in self.db:
             self.add_user(id)
 
-        user = self.db['users'][f'{id}']
+        user = self.db[str(id)]
 
         # parse reminder
         try:
@@ -81,7 +83,7 @@ class ReminderCog(commands.Cog):
             embed.add_field(name="What (Optional)", value="{task}?\n{task}?\n{task}?\n{task}?", inline=True)
             embed.add_field(name="Examples", value=examples, inline=False)
             embed.add_field(name="Units", value=units, inline=False)
-            embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
+            embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
             
             await ctx.send(embed=embed)
             return
@@ -97,7 +99,7 @@ class ReminderCog(commands.Cog):
         user['reminders'] = sorted(user['reminders'], key=lambda x: x['time'])
 
         # save reminders
-        with open('reminders.json', 'w') as f:
+        with open(JSON_PATH, 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
         # reply
@@ -106,7 +108,7 @@ class ReminderCog(commands.Cog):
             reply += f'\n> *{task}*'
 
         embed = discord.Embed(title="Reminder Set", description=reply)
-        embed.set_footer(text=f"{ctx.author.display_name} \u00B7 /rm to delete this reminder", icon_url=ctx.author.guild_avatar)
+        embed.set_footer(text=f"{ctx.author.display_name} \u00B7 /rm to delete this reminder", icon_url=ctx.author.display_avatar)
 
         await ctx.send(embed=embed)
 
@@ -116,10 +118,10 @@ class ReminderCog(commands.Cog):
         id = ctx.author.id
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']:
+        if str(id) not in self.db:
             self.add_user(id)
 
-        user = self.db['users'][f'{id}']
+        user = self.db[str(id)]
 
         # reply
         if len(user['reminders']) == 0:
@@ -134,7 +136,7 @@ class ReminderCog(commands.Cog):
             embed = discord.Embed(title="Your Reminders:", description=description)
 
         embed.add_field(name="\u200b", value="`/info {index}` to get information about a reminder.\n`/rm {indexes}` to delete reminder(s).\n`/rm all` to delete all reminders.")
-        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
+        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
 
         await ctx.send(embed=embed)
 
@@ -145,10 +147,10 @@ class ReminderCog(commands.Cog):
         now = ctx.message.created_at.astimezone().replace(microsecond=0)
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']:
+        if str(id) not in self.db:
             self.add_user(id)
             
-        user = self.db['users'][f'{id}']
+        user = self.db[str(id)]
 
         # if user has no reminders
         if len(user['reminders']) == 0:
@@ -177,7 +179,7 @@ class ReminderCog(commands.Cog):
         user['reminders'][abs(index)-1]['modified'] = now
         
         # save reminders
-        with open('reminders.json', 'w') as f:
+        with open(JSON_PATH, 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
         # reply
@@ -193,7 +195,7 @@ class ReminderCog(commands.Cog):
         embed = discord.Embed(title="Reminder", description=reply)
         embed.add_field(name="Created", value=f'<t:{round(reminder["created"].timestamp())}:R>', inline=False)
         embed.add_field(name="Original Message", value=reminder['url'], inline=False)
-        embed.set_footer(text=f'{ctx.author.display_name} \u00B7 /rm to delete this reminder', icon_url=ctx.author.guild_avatar) 
+        embed.set_footer(text=f'{ctx.author.display_name} \u00B7 /rm to delete this reminder', icon_url=ctx.author.display_avatar) 
 
         await ctx.send(embed=embed)
 
@@ -204,10 +206,10 @@ class ReminderCog(commands.Cog):
         now = ctx.message.created_at.astimezone().replace(microsecond=0)
 
         # add user if user not in database
-        if f'{id}' not in self.db['users']:
+        if str(id) not in self.db:
             self.add_user(id)
 
-        user = self.db['users'][f'{id}']
+        user = self.db[str(id)]
 
         # if user has no reminders
         if len(user['reminders']) == 0:
@@ -250,7 +252,7 @@ class ReminderCog(commands.Cog):
             user['reminders'].remove(reminder)
 
         # save reminders
-        with open('reminders.json', 'w') as f:
+        with open(JSON_PATH, 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
         # reply
@@ -261,7 +263,7 @@ class ReminderCog(commands.Cog):
                 description = description[:-1] + " \u200b"*5 + f'**>** *{reminder["task"]}*\n'
 
         embed = discord.Embed(title="Reminders Deleted", description=description)
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.guild_avatar)
+        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
 
         await ctx.send(embed=embed)
 
@@ -271,11 +273,11 @@ class ReminderCog(commands.Cog):
 
         # reminders are sorted by time
         # for each user, check top reminder
-        for id in self.db['users']:
-            if len(self.db['users'][id]['reminders']) == 0:
+        for id in self.db:
+            if len(self.db[id]['reminders']) == 0:
                 pass
             else:
-                reminder = self.db['users'][id]['reminders'][0]
+                reminder = self.db[id]['reminders'][0]
 
                 if reminder['time'] <= now:
                     author = await self.bot.fetch_user(int(id))
@@ -286,16 +288,16 @@ class ReminderCog(commands.Cog):
                         embed = discord.Embed(title="Reminder", timestamp=reminder["created"])
 
                     embed.add_field(name="Original Message", value=reminder['url'])
-                    embed.set_footer(text=f'{author.display_name}', icon_url=author.guild_avatar)
+                    embed.set_footer(text=f'{author.display_name}', icon_url=author.display_avatar)
 
                     # send reminder
                     await author.send(embed=embed)
 
                     # delete reminder
-                    self.db['users'][id]['reminders'].remove(reminder)
+                    self.db[id]['reminders'].remove(reminder)
 
                     # save reminders
-                    with open('reminders.json', 'w') as f:
+                    with open(JSON_PATH, 'w') as f:
                         json.dump(self.db, f, indent=4, default=str)
 
     @remind.before_loop
@@ -303,10 +305,8 @@ class ReminderCog(commands.Cog):
         await self.bot.wait_until_ready()
 
 async def error(ctx: commands.Context, description: str):
-    if not (avatar := ctx.author.guild_avatar):
-        avatar = ctx.author.avatar
     embed = discord.Embed(title="Woops...", description=description)
-    embed.set_footer(text=ctx.author.display_name, icon_url=avatar)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
     await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):

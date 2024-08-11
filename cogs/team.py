@@ -101,10 +101,8 @@ class TeamCog(commands.Cog):
         await ctx.send(embed=embed)
 
 async def error(ctx: commands.Context, description: str):
-    if not (avatar := ctx.author.guild_avatar):
-        avatar = ctx.author.avatar
     embed = discord.Embed(title="Woops...", description=description)
-    embed.set_footer(text=ctx.author.display_name, icon_url=avatar)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
     await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):

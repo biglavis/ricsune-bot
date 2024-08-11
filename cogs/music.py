@@ -5,11 +5,21 @@ import yt_dlp
 import discord
 from discord.ext import commands
 
-MAX_SEARCH = 5
-YDL_OPTS = {
+MAX_SEARCH = 20
+MAX_RESULTS = 5
+YDL_SEARCH_OPTS = {
+    'match_filter': yt_dlp.utils.match_filter_func("original_url!*=/shorts/ & url!*=/shorts/ & !live_status"),
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'extract_flat': True,
+    'no_warnings': True,
+    'quiet': True
+}
+YDL_DOWNLOAD_OPTS = {
     'format': 'm4a/bestaudio/best',
     'outtmpl': './downloads/%(id)s.%(ext)s',
-    'match_filter': yt_dlp.utils.match_filter_func("original_url!*=/shorts/ & url!*=/shorts/"),
+    'match_filter': yt_dlp.utils.match_filter_func("original_url!*=/shorts/ & url!*=/shorts/ & !is_live"),
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
@@ -35,7 +45,7 @@ class MusicCog(commands.Cog):
             await error(ctx, "You are not in a voice channel.")
             return
     
-        with yt_dlp.YoutubeDL(YDL_OPTS) as ydl:
+        with yt_dlp.YoutubeDL(YDL_SEARCH_OPTS) as ydl:
             # grab link
             if any(site in song for site in ["youtube.com/", "youtu.be/"]):
                 video = ydl.extract_info(f"ytsearch:{song}", download=False)['entries'][0]
@@ -48,9 +58,11 @@ class MusicCog(commands.Cog):
                 description = ""
                 for i, video in enumerate(videos):
                     description += f"`[{i+1}]` [{video['title']}]({video['url']}) ({parse(video['duration'])})\n"
+                    if i == MAX_RESULTS - 1:
+                        break
 
                 embed = discord.Embed(title="Search Results:", description=description)
-                embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.guild_avatar)
+                embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
 
                 await ctx.send(embed=embed)
 
@@ -59,15 +71,15 @@ class MusicCog(commands.Cog):
                     return m.author == ctx.author and m.channel == ctx.channel
 
                 try:
-                    response = await self.bot.wait_for('message', check=check, timeout=30.0)
-                    index = int(response.content) - 1
+                    response = await self.bot.wait_for('message', check=check, timeout=10.0)
+                    index = int(response.content)
                 except:
                     return
                 
-                if index < 0 or index > len(videos) - 1:
+                if index < 1 or index > min(len(videos), MAX_RESULTS):
                     return
                 
-                video = videos[index]
+                video = videos[index-1]
 
             # grab metadata
             url, title, duration, id = video['url'], video['title'], video['duration'], video['id']
@@ -79,7 +91,7 @@ class MusicCog(commands.Cog):
             self.queue.append({i: loc[i] for i in ('url', 'title', 'duration', 'thumbnail', 'id', 'user')})
 
             embed = discord.Embed(description=f"Added **[{title}]({url}) ({parse(duration)})** to the queue")
-            embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.guild_avatar)
+            embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
 
             await ctx.send(embed=embed)
 
@@ -99,7 +111,7 @@ class MusicCog(commands.Cog):
             self.now_playing = self.queue.pop(0)
 
             # download audio
-            with yt_dlp.YoutubeDL(YDL_OPTS) as ydl:
+            with yt_dlp.YoutubeDL(YDL_DOWNLOAD_OPTS) as ydl:
                 ydl.extract_info(self.now_playing['url'])
 
             # play
@@ -141,7 +153,7 @@ class MusicCog(commands.Cog):
             return
         
         embed = discord.Embed(description=f"Skipped **[{self.now_playing['title']}]({self.now_playing['url']}) ({parse(self.now_playing['duration'])})**")
-        embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.guild_avatar)
+        embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
 
         await ctx.send(embed=embed)
 
@@ -154,10 +166,8 @@ class MusicCog(commands.Cog):
             await ctx.voice_client.disconnect()
     
 async def error(ctx: commands.Context, description: str):
-    if not (avatar := ctx.author.guild_avatar):
-        avatar = ctx.author.avatar
     embed = discord.Embed(title="Woops...", description=description)
-    embed.set_footer(text=ctx.author.display_name, icon_url=avatar)
+    embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
     await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):
