@@ -66,13 +66,13 @@ class RiotCog(commands.Cog):
         # get champion stats
         if masteries := riot.get_champion_masteries_by_puuid(summoner['puuid'], 3):
             for i, mastery in enumerate(masteries):
-                if not (champion := riot.get_champion(mastery['championId'])):
+                if not (champion := riot.get_champion_by_id(mastery['championId'])):
                     continue
                 if i == 0:
                     embed.add_field(name="\t", value="\t", inline=False)
                     embed.add_field(name="Highest Champion Mastery", value="\t", inline=False)
 
-                embed.add_field(name=champion['id'], value=f"Level: `{mastery['championLevel']}`\nPoints: `{mastery['championPoints']}`", inline=True)
+                embed.add_field(name=champion['name'], value=f"Level: `{mastery['championLevel']}`\nPoints: `{mastery['championPoints']}`", inline=True)
         
         # get recent games
         if matchId := riot.get_matchId_by_puuid(summoner['puuid'], 3):
