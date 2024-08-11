@@ -189,9 +189,9 @@ def get_champion_by_name(championName: str) -> dict | None:
     if resp.status_code == 200:
         return resp.json()['data'][championName[0]]
     
-def get_champion_skins_by_name(championName: str) -> list[str]:
+def get_champion_skins_by_name(championName: str) -> list[dict]:
     '''
-    Get champion splash art by name.
+    Get champion skins by name.
     '''
     if champion := get_champion_by_name(championName):
         [skin.update({'url' : DD_URL + f"/cdn/img/champion/splash/{champion['id']}_{skin['num']}.jpg"}) for skin in champion['skins']]
