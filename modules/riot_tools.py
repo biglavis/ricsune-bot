@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import difflib
 
 import requests
 import urllib.parse
@@ -132,27 +133,69 @@ def get_summoner_icon(iconId: int | str) -> str | None:
     '''
     Returns summoner icon link.
     '''
-    version = get_dd_version()
+    if not (version := get_dd_version()):
+        return
+    
     return DD_URL + f"/cdn/{version}/img/profileicon/{iconId}.png"
 
 def get_champions() -> dict | None:
     '''
     Get champions.
     '''
-    version = get_dd_version()
+    if not (version := get_dd_version()):
+        return
 
     url = DD_URL + f"/cdn/{version}/data/en_US/champion.json"
     resp = requests.get(url)
 
     if resp.status_code == 200:
-        return list(resp.json()['data'].values())
+        return resp.json()['data']
     
-def get_champion(championId: int | str) -> dict | None:
+def get_champion_by_id(championId: int | str) -> dict | None:
     '''
     Get champion by ID.
     '''
+    if not (version := get_dd_version()):
+        return
+
     if not (champions := get_champions()):
         return
     
-    if champion := [champion for champion in champions if champion['key'] == str(championId)]:
-        return champion[0]
+    if not (championName := [champion['id'] for champion in champions.values() if champion['key'] == str(championId)]):
+        return
+    
+    url = DD_URL + f"/cdn/{version}/data/en_US/champion/{championName[0]}.json"
+    resp = requests.get(url)
+
+    if resp.status_code == 200:
+        return resp.json()['data'][championName[0]]
+
+    
+def get_champion_by_name(championName: str) -> dict | None:
+    '''
+    Get champion by name.
+    '''
+    if not (version := get_dd_version()):
+        return
+
+    if not (champions := get_champions()):
+        return
+    
+    if not (championName := difflib.get_close_matches(championName, champions.keys(), 1)):
+        return
+    
+    url = DD_URL + f"/cdn/{version}/data/en_US/champion/{championName[0]}.json"
+    resp = requests.get(url)
+
+    if resp.status_code == 200:
+        return resp.json()['data'][championName[0]]
+    
+def get_champion_splash_by_name(championName: str) -> list[str]:
+    '''
+    Get champion splash art by name.
+    '''
+    if champion := get_champion_by_name(championName):
+        return [DD_URL + f"/cdn/img/champion/splash/{champion['id']}_{i}.jpg" for i in [skin['num'] for skin in champion['skins']]]
+    
+x = get_champion_splash_by_name("ezreal")
+pass
