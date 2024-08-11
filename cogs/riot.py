@@ -1,5 +1,7 @@
+import os
 import re
 import json
+import requests
 import urllib.parse
 from datetime import timedelta
 import modules.riot_tools as riot
@@ -7,10 +9,53 @@ import modules.riot_tools as riot
 import discord
 from discord.ext import commands
 
-JSON_PATH = "json//summoners.json"
+JSON_PATH = "json/summoners.json"
+
+class PaginationView(discord.ui.View):
+    def __init__(self, skins: list, timeout: int = 180):
+        super().__init__(timeout=timeout)
+        self.index = 0
+        self.skins = skins
+
+    @discord.ui.button(label="<", style=discord.ButtonStyle.green, custom_id="prev")
+    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+        if self.index > 0:
+            self.index -= 1
+        else:
+            self.index = len(self.skins) - 1
+        
+        await self.update_img(interaction=interaction)
+
+    @discord.ui.button(label=">", style=discord.ButtonStyle.green, custom_id="next")
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button,):
+        if self.index < len(self.skins) - 1:
+            self.index += 1
+        else:
+            self.index = 0
+
+        await self.update_img(interaction=interaction)
+
+    async def update_img(self, interaction: discord.Interaction):
+        if not (img_data := requests.get(self.skins[self.index]['url']).content):
+            raise Exception("Failed to get image.")
+
+        img_name = self.skins[self.index]['url'].split("/")[-1]
+
+        with open("downloads/" + img_name, "wb") as handler:
+            handler.write(img_data)
+
+        file = discord.File(fp="downloads/" + img_name)
+
+        embed = discord.Embed(title=self.skins[self.index]['name'].title(), description="\t")
+        embed.set_image(url="attachment://" + img_name)
+        embed.set_footer(text=f"{self.index + 1}/{len(self.skins)}")
+
+        await interaction.response.edit_message(embed=embed, attachments=[file])
+
+        file.close()
+        os.remove("downloads/" + img_name)
 
 class RiotCog(commands.Cog):
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -143,6 +188,32 @@ class RiotCog(commands.Cog):
         else:
             await error(ctx, "Invalid user.\nUser must be a member or a Riot ID in the form {gameName}#{tagLine}.")
             return
+        
+    @commands.hybrid_command(brief="View champion splash art.", description="View champion splash art.")
+    async def splash(self, ctx: commands.Context, champion: str):
+        if not (skins := riot.get_champion_skins_by_name(champion)):
+            await error(ctx, "Champion not found.")
+            return
+        
+        if not (img_data := requests.get(skins[0]['url']).content):
+            await error(ctx, "Failed to get image.")
+            return
+        
+        img_name = skins[0]['url'].split("/")[-1]
+
+        with open("downloads/" + img_name, "wb") as handler:
+            handler.write(img_data)
+
+        file = discord.File(fp="downloads/" + img_name)
+        
+        embed = discord.Embed(title=skins[0]['name'].title(), description="\t")
+        embed.set_image(url="attachment://" + img_name)
+        embed.set_footer(text=f"1/{len(skins)}")
+
+        await ctx.send(embed=embed, file=file, view=PaginationView(skins))
+
+        file.close()
+        os.remove("downloads/" + img_name)
 
 async def error(ctx: commands.Context, description: str):
     embed = discord.Embed(title="Woops...", description=description)
