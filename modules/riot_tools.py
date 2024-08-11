@@ -128,7 +128,7 @@ def get_dd_version() -> str | None:
 
     if resp.status_code == 200:
         return resp.json()[0]
-    
+
 def get_summoner_icon(iconId: int | str) -> str | None:
     '''
     Returns summoner icon link.
@@ -144,7 +144,7 @@ def get_champions() -> dict | None:
     '''
     if not (version := get_dd_version()):
         return
-
+    
     url = DD_URL + f"/cdn/{version}/data/en_US/champion.json"
     resp = requests.get(url)
 
@@ -169,7 +169,6 @@ def get_champion_by_id(championId: int | str) -> dict | None:
 
     if resp.status_code == 200:
         return resp.json()['data'][championName[0]]
-
     
 def get_champion_by_name(championName: str) -> dict | None:
     '''
@@ -190,12 +189,10 @@ def get_champion_by_name(championName: str) -> dict | None:
     if resp.status_code == 200:
         return resp.json()['data'][championName[0]]
     
-def get_champion_splash_by_name(championName: str) -> list[str]:
+def get_champion_skins_by_name(championName: str) -> list[str]:
     '''
     Get champion splash art by name.
     '''
     if champion := get_champion_by_name(championName):
-        return [DD_URL + f"/cdn/img/champion/splash/{champion['id']}_{i}.jpg" for i in [skin['num'] for skin in champion['skins']]]
-    
-x = get_champion_splash_by_name("ezreal")
-pass
+        [skin.update({'url' : DD_URL + f"/cdn/img/champion/splash/{champion['id']}_{skin['num']}.jpg"}) for skin in champion['skins']]
+        return champion['skins']
