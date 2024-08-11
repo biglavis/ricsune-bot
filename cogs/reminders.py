@@ -18,7 +18,6 @@ def date_hook(json_dict):
     return json_dict
 
 class ReminderCog(commands.Cog):
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 

@@ -9,7 +9,6 @@ load_dotenv()
 MY_GUILD = int(os.getenv("MY_GUILD"))
 
 class ToolCog(commands.Cog):
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         print(f"cog: {self.qualified_name} loaded")

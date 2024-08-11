@@ -103,8 +103,8 @@ class MusicCog(commands.Cog):
 
     async def play_next(self, ctx: commands.Context):
         # flush downloads
-        if os.path.exists("./downloads"):
-            for file in os.listdir("./downloads"):
+        for file in os.listdir("./downloads"):
+            if file.endswith(".m4a"):
                 os.remove(f"./downloads/{file}")
     
         if self.queue:

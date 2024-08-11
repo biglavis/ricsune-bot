@@ -70,7 +70,16 @@ async def load():
             await bot.load_extension(f'cogs.{filename[:-3]}')
 
 async def main():
+    # create missing directories
+    for directory in ["json", "downloads"]:
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+
+    # load cogs
     await load()
+
+    # start bot
     await bot.start(TOKEN)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
