@@ -135,7 +135,7 @@ class ReminderCog(commands.Cog):
 
             embed = discord.Embed(title="Your Reminders:", description=description)
 
-        embed.add_field(name="\u200b", value="`/info {index}` to get information about a reminder.\n`/rm {indexes}` to delete reminder(s).\n`/rm all` to delete all reminders.")
+        embed.add_field(name="\t", value="`/info {index}` to get information about a reminder.\n`/rm {indexes}` to delete reminder(s).\n`/rm all` to delete all reminders.")
         embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
 
         await ctx.send(embed=embed)
