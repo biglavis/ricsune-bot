@@ -22,15 +22,15 @@ class RiotCog(commands.Cog):
 
         print(f"cog: {self.qualified_name} loaded")
 
-    @commands.command()
-    async def register(self, ctx: commands.Context, *, riotId: str):
-        riotId = riotId.split("#")
+    @commands.hybrid_command(brief="Register your LoL account.", description="Register your LoL account.")
+    async def register(self, ctx: commands.Context, *, riot_id: str):
+        riot_id = riot_id.split("#")
 
-        if len(riotId) != 2:
+        if len(riot_id) != 2:
             await error(ctx, "Invalid Riot ID.\nRiot ID must be in the form {gameName}#{tagLine}.")
             return
 
-        if not (summoner := riot.get_summoner_by_name(riotId[0], riotId[1])):
+        if not (summoner := riot.get_summoner_by_name(riot_id[0], riot_id[1])):
             await error(ctx, "Account not found.")
             return
 
@@ -42,8 +42,9 @@ class RiotCog(commands.Cog):
 
         await self.summoner(ctx)
 
-    @commands.command()
+    @commands.hybrid_command(brief="View summoner stats.", description="View summoner stats.")
     async def summoner(self, ctx: commands.Context, *, user: str = None):
+        # get summoner
         if not (tupl := await self.get_summoner(ctx, user)):
             return
         
@@ -54,10 +55,12 @@ class RiotCog(commands.Cog):
         if member:
             embed.set_author(name=member.display_name, icon_url=member.display_avatar)
 
+        # get ranked stats
         if stats := riot.get_stats_by_summoner(summoner['id']):
             for entry in [entry for entry in stats if "leagueId" in entry]:
                 embed.add_field(name=" ".join(entry['queueType'].split("_")[:-1]).title(), value=f"{entry['tier'].title()} {entry['rank']} `({entry['wins']}W|{entry['losses']}L)`")
         
+        # get recent games
         if matchId := riot.get_matchId_by_puuid(summoner['puuid'], 3):
             def win_str(win: bool):
                 if win: return "W"
@@ -111,8 +114,8 @@ class RiotCog(commands.Cog):
             
             return summoner, ctx.guild.get_member(int(id))
             
-        elif len(riotId := user.split("#")) == 2:
-            if not (summoner := riot.get_summoner_by_name(riotId[0], riotId[1])):
+        elif len(riot_id := user.split("#")) == 2:
+            if not (summoner := riot.get_summoner_by_name(riot_id[0], riot_id[1])):
                 await error(ctx, "Summoner not found.")
                 return
             
