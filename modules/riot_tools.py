@@ -22,6 +22,10 @@ def get_dd_version() -> str | None:
         return resp.json()[0]
 
 def get_account_by_name(gameName: str, tagLine: str) -> dict | None:
+    '''
+    Get Riot account by Riot ID.\n
+    Returns: AccountDto
+    '''
     gameName = urllib.parse.quote(gameName)
     tagLine = urllib.parse.quote(tagLine)
 
@@ -32,6 +36,10 @@ def get_account_by_name(gameName: str, tagLine: str) -> dict | None:
         return resp.json()
 
 def get_account_by_puuid(puuid: str) -> dict | None:
+    '''
+    Get Riot account by puuid.\n
+    Returns: AccountDto
+    '''
     puuid = urllib.parse.quote(puuid)
 
     url = AMERICA_URL + f"/riot/account/v1/accounts/by-puuid/{puuid}"
@@ -41,6 +49,10 @@ def get_account_by_puuid(puuid: str) -> dict | None:
         return resp.json()   
 
 def get_summoner_by_name(gameName: str, tagLine: str) -> dict | None:
+    '''
+    Get summoner by Riot ID.\n
+    Returns: merge(SummonerDTO, AccountDto)
+    '''
     if not (account := get_account_by_name(gameName, tagLine)):
         return None
     
@@ -55,6 +67,10 @@ def get_summoner_by_name(gameName: str, tagLine: str) -> dict | None:
         return summoner
     
 def get_summoner_by_puuid(puuid: str) -> dict | None:
+    '''
+    Get summoner by puuid.\n
+    Returns: merge(SummonerDTO, AccountDto)
+    '''
     if not (account := get_account_by_puuid(puuid)):
         return None
     
@@ -75,7 +91,11 @@ def get_summoner_icon(iconId: int) -> str | None:
     version = get_dd_version()
     return DD_URL + f"/cdn/{version}/img/profileicon/{iconId}.png"
 
-def get_stats_by_summoner(summonerId: str) -> dict | None:
+def get_stats_by_summoner(summonerId: str) -> list[dict] | None:
+    '''
+    Get summoner stats.\n
+    Returns: list[LeagueEntryDTO]
+    '''
     summonerId = urllib.parse.quote(summonerId)
 
     url = NA_URL + f"/lol/league/v4/entries/by-summoner/{summonerId}"
@@ -85,6 +105,10 @@ def get_stats_by_summoner(summonerId: str) -> dict | None:
         return resp.json()
     
 def get_matchId_by_puuid(puuid: str, count: int = 20) -> list | None:
+    '''
+    Get match IDs.\n
+    Returns: list[str]
+    '''
     puuid = urllib.parse.quote(puuid)
 
     url = AMERICA_URL + f"/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count={count}"
@@ -94,6 +118,10 @@ def get_matchId_by_puuid(puuid: str, count: int = 20) -> list | None:
         return resp.json()
     
 def get_match_by_matchId(matchId: str) -> dict | None:
+    '''
+    Get match info by matchId.\n
+    Returns: MatchDto
+    '''
     matchId = urllib.parse.quote(matchId)
 
     url = AMERICA_URL + f"/lol/match/v5/matches/{matchId}"
@@ -101,16 +129,3 @@ def get_match_by_matchId(matchId: str) -> dict | None:
 
     if resp.status_code == 200:
         return resp.json()
-    
-def get_winrate(puuid: str, matchId: list[str]) -> tuple[int, int] | None:
-    wins = 0
-    losses = 0
-    for match in matchId:
-        if matchDto := get_match_by_matchId(match):
-            participantDto = [participantDto for participantDto in matchDto['info']['participants'] if participantDto['puuid'] == puuid][0]
-            if participantDto['win']:
-                wins += 1
-            else:
-                losses += 1
-
-    return wins, losses
