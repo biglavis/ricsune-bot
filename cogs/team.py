@@ -86,7 +86,8 @@ class TeamCog(commands.Cog):
                 value += f"{member}\n"
             embed.add_field(name=f"Team {i+1}", value=value)
 
-        await ctx.send(embed=embed, silent=True)
+        message = await ctx.send(embed=embed, silent=True)
+        await message.add_reaction("<:upvote:1275220048616624231")
 
     @commands.hybrid_command(brief="Destroy the current lobby.", description="Destroy the current lobby.")
     async def destroy(self, ctx: commands.context):
