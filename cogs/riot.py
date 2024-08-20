@@ -18,7 +18,7 @@ class PaginationView(discord.ui.View):
         self.skins = skins
 
     @discord.ui.button(label="<", style=discord.ButtonStyle.green, custom_id="prev")
-    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.index > 0:
             self.index -= 1
         else:
@@ -27,7 +27,7 @@ class PaginationView(discord.ui.View):
         await self.update_img(interaction=interaction)
 
     @discord.ui.button(label=">", style=discord.ButtonStyle.green, custom_id="next")
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button,):
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.index < len(self.skins) - 1:
             self.index += 1
         else:

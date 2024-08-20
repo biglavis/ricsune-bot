@@ -42,7 +42,7 @@ class ToolCog(commands.Cog):
 
         # wait for response
         try:
-            response = await self.bot.wait_for('message', check=check, timeout=30.0)
+            response = await self.bot.wait_for('message', check=check, timeout=10.0)
         except:
             return
 
