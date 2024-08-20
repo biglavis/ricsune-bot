@@ -21,7 +21,7 @@ class ToolCog(commands.Cog):
     async def ping(self, ctx: commands.Context):
         await ctx.reply(content=f'***Pong!*** ({round(self.bot.latency * 1000)}ms)')
 
-    # sync commands to current server
+    # sync commands to the current server
     @commands.command(hidden=True)
     @commands.is_owner()
     @commands.cooldown(1, 90)
@@ -29,7 +29,17 @@ class ToolCog(commands.Cog):
         async with ctx.channel.typing():
             self.bot.tree.copy_global_to(guild=ctx.guild)
             fmt = await self.bot.tree.sync(guild=ctx.guild)
-            await ctx.reply(content=f'Synced {len(fmt)} commands to the current server.')
+            await ctx.reply(content=f'Synchronized {len(fmt)} slash commands to the current server.')
+
+    # unsync commands to the current server
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    @commands.cooldown(1, 90)
+    async def unsync(self, ctx: commands.Context):
+        async with ctx.channel.typing():
+            self.bot.tree.clear_commands(guild=ctx.guild)
+            await self.bot.tree.sync(guild=ctx.guild)
+            await ctx.reply(content=f'Slash commands have been unsynchronized in this server.')
 
     # clears all messages in the current channel
     @commands.command(hidden=True)
