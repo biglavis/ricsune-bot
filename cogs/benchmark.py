@@ -1,5 +1,6 @@
 import random
 import json
+import asyncio
 
 import discord
 import discord.colour
@@ -8,8 +9,8 @@ from discord.ext import commands
 JSON_PATH = 'json//benchmarks.json'
 
 class Button(discord.ui.Button):
-    def __init__(self, label: str = "\u200b", style: discord.ButtonStyle = discord.ButtonStyle.grey, custom_id: str = None):
-        super().__init__(label=label, style=style, custom_id=custom_id)
+    def __init__(self, label: str = "\u200b", style: discord.ButtonStyle = discord.ButtonStyle.grey, custom_id: str = None, row: int = None):
+        super().__init__(label=label, style=style, custom_id=custom_id, row=row)
         self.value = None
 
     async def callback(self, interaction: discord.Interaction):
@@ -196,6 +197,60 @@ class ChimpView(discord.ui.View):
         await self.message.edit(embed=embed, view=self)
         self.stop()
 
+class TilesView(discord.ui.View):
+    def __init__(self, ctx: commands.Context, timeout: int = 180):
+        super().__init__(timeout=timeout)
+        self.ctx = ctx
+        self.message: discord.Message = None
+
+    async def generate(self, rows: int, columns: int, values: list[int]):
+        for i in range(rows):
+            for j in range(columns):
+                self.add_item(Button(row=i))
+
+        button: Button
+        for i, button in enumerate(self.children):
+            button.value = values[i]
+
+        await self.message.edit(view=self)
+
+    async def reveal(self):
+        button: Button
+        for button in self.children:
+            if button.value:
+                button.style = discord.ButtonStyle.blurple
+
+        await self.message.edit(view=self)
+
+class Tiles():
+    def __init__(self, ctx: commands.Context, views = list[TilesView]):
+        self.ctx = ctx
+        self.views = views
+        self.level = 11
+        self.strikes = 0
+        self.lives = 3
+
+    async def scramble(self):
+        if self.level < 3:
+            grid = [3, 3]
+        elif self.level < 7:
+            grid = [4, 4]
+        elif self.level < 11:
+            grid = [5, 5]
+        elif self.level < 16:
+            grid = [5, 7]
+        else:
+            grid = [5, 10]
+
+        values = [True]*(self.level + 2) + [False]*(grid[0]*grid[1] - (self.level + 2))
+        random.shuffle(values)
+
+        await self.views[0].generate(rows=min(5, grid[1]), columns=grid[0], values=values[:min(25, grid[0]*grid[1])])
+        await self.views[1].generate(rows=max(0, grid[1]-5), columns=grid[0], values=values[min(25, grid[0]*grid[1]):])
+
+        await self.views[0].reveal()
+        await self.views[1].reveal()
+
 class BenchmarkCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -207,6 +262,15 @@ class BenchmarkCog(commands.Cog):
 
         view = ChimpView(ctx=ctx)
         view.message = await ctx.send(embed=embed, view=view)
+
+    @commands.command()
+    async def tiles(self, ctx: commands.Context):
+        views = [TilesView(ctx=ctx), TilesView(ctx=ctx)]
+        views[0].message = await ctx.send(content="\u200b", view=views[0])
+        views[1].message = await ctx.send(content="\u200b", view=views[1])
+
+        x = Tiles(ctx=ctx, views=views)
+        await x.scramble()
 
 def get_leaderboard() -> dict:
     try:
