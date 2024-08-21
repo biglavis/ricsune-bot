@@ -59,6 +59,12 @@ async def reload(ctx: commands.Context):
     sys.stdout = sys.__stdout__
     os.remove('temp.txt')
 
+@bot.command(hidden=True)
+@commands.is_owner()
+async def kill(ctx: commands.Context):
+    await ctx.send(content="👋")
+    sys.exit(0)
+
 async def error(ctx: commands.Context, description: str):
     embed = discord.Embed(title="Woops...", description=description)
     embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
