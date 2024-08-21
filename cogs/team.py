@@ -63,7 +63,7 @@ class TeamCog(commands.Cog):
     @commands.hybrid_command(brief="Add a participant to the lobby.", description="Add a participant to the lobby.")
     async def add(self, ctx: commands.context, name: str):
         self.participants.append(name)
-        embed = discord.Embed(description=f"Added {name} to the lobby")
+        embed = discord.Embed(description=f"Added **{name}** to the lobby")
         embed.set_footer(text="/lobby to see who's in the lobby")
         await ctx.send(embed=embed) 
 
@@ -75,7 +75,7 @@ class TeamCog(commands.Cog):
             return
         
         member = self.participants.pop(id-1)
-        embed = discord.Embed(description=f"Kicked {member} from the lobby")
+        embed = discord.Embed(description=f"Kicked **{member}** from the lobby")
         embed.set_footer(text="/lobby to see who's in the lobby")
         await ctx.send(embed=embed) 
 
