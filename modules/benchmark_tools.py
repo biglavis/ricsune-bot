@@ -1,5 +1,6 @@
 import random
 import json
+import datetime
 import asyncio
 
 import discord
@@ -50,7 +51,7 @@ class ChimpView(discord.ui.View):
         for i, button in enumerate(self.children):
             button.value = values[i]
 
-    async def reveal(self):
+    def reveal(self):
         '''
         Reveals the numbers.
         '''
@@ -65,9 +66,7 @@ class ChimpView(discord.ui.View):
                 button.label = "\u200b"
                 button.disabled = True
 
-        await self.message.edit(content=f"`Level: {self.controller.level}   Lives: {'♥'*self.controller.lives}`", embed=None, view=self)
-
-    async def hide(self):
+    def hide(self):
         '''
         Hides the numbers.
         '''
@@ -75,14 +74,20 @@ class ChimpView(discord.ui.View):
         for button in self.children:
             button.label = "\u200b"
 
-        await self.message.edit(embed=None, view=self)
-
     def remove_all(self):
         '''
         Removes all children from this view.
         '''
         while self.children:
             self.remove_item(self.children[0])
+
+    async def update(self, **kwargs):
+        '''
+        Edit self.message
+        '''
+        if 'view' not in kwargs:
+            kwargs['view'] = self
+        self.message = await self.message.edit(**kwargs)
 
     async def interacted(self, button: Button, interaction: discord.Interaction):
         '''
@@ -124,8 +129,9 @@ class Chimp():
         random.shuffle(values)
         
         self.view.generate(rows=5, columns=5, values=values)
+        self.view.reveal()
 
-        await self.view.reveal()
+        await self.view.update(content=f"`Level: {self.level}   Lives: {'♥'*self.lives}`", embed=None)
 
     async def interacted(self, button: Button, interaction: discord.Interaction):
         '''
@@ -138,27 +144,18 @@ class Chimp():
             return
 
         if button.value != self.stage:
-            button.style = discord.ButtonStyle.red
-            b: Button
-            for b in self.view.children:
-                b.disabled = True
-            await interaction.response.edit_message(view=button.view)
-            await asyncio.sleep(1)
-            await self.failed()
+            await self.failed(button=button, interaction=interaction)
             return
         
         self.stage += 1
         
         if self.stage == self.level:
-            button.style = discord.ButtonStyle.green
-            button.disabled = True
-            await interaction.response.edit_message(view=button.view)
-            await asyncio.sleep(1)
-            await self.passed()
+            await self.passed(button=button, interaction=interaction)
             return
         
         if self.level > 4 and self.stage == 1:
-            await self.view.hide()
+            self.view.hide()
+            await self.view.update()
 
         button.style = discord.ButtonStyle.grey
         button.label = "\u200b"
@@ -166,24 +163,39 @@ class Chimp():
 
         await interaction.response.edit_message(view=button.view)
 
-    async def passed(self):
+    async def passed(self, button: Button, interaction: discord.Interaction):
         '''
         User passed the level.
         '''
         self.level += 1
         self.stage = 0
 
+        button.style = discord.ButtonStyle.green
+        button.disabled = True
+
+        await interaction.response.edit_message(view=button.view)
+        await asyncio.sleep(1)
+
         if self.level > 25:
             await self.completed()
         else:
             await self.scramble()
 
-    async def failed(self):
+    async def failed(self, button: Button, interaction: discord.Interaction):
         '''
         User failed the level.
         '''
         self.lives -= 1
         self.stage = 0
+
+        button.style = discord.ButtonStyle.red
+
+        b: Button
+        for b in self.view.children:
+            b.disabled = True
+
+        await interaction.response.edit_message(view=button.view)
+        await asyncio.sleep(1)
 
         if self.lives == 0:
             await self.completed()
@@ -223,7 +235,7 @@ class Chimp():
 
         embed = discord.Embed(title=f"Your Score: {score}", description=description)
 
-        await self.view.message.edit(content=None, embed=embed, view=None)
+        await self.view.update(content=None, embed=embed, view=None)
         self.view.stop()
 
 # Visual Memory
@@ -239,7 +251,7 @@ class SquaresView(discord.ui.View):
     async def on_timeout(self):
         await self.controller.completed()
 
-    async def generate(self, rows: int, columns: int, values: list[int]):
+    def generate(self, rows: int, columns: int, values: list[int]):
         '''
         Adds buttons and assigns squares.
         '''
@@ -253,12 +265,7 @@ class SquaresView(discord.ui.View):
         for i, button in enumerate(self.children):
             button.value = values[i]
 
-        if self == self.controller.views[0]:
-            await self.message.edit(content=f"`Level: {self.controller.level}   Lives: {'♥'*self.controller.lives}`", embed=None, view=self)
-        elif self.children:
-            await self.message.edit(embed=None, view=self)
-
-    async def reveal(self):
+    def reveal(self):
         '''
         Reveals the squares.
         '''
@@ -271,9 +278,7 @@ class SquaresView(discord.ui.View):
                 button.style = discord.ButtonStyle.blurple
             button.disabled = True
 
-        await self.message.edit(embed=None, view=self)
-
-    async def hide(self):
+    def hide(self):
         '''
         Hides the squares.
         '''
@@ -285,14 +290,20 @@ class SquaresView(discord.ui.View):
             button.style = discord.ButtonStyle.grey
             button.disabled = False
 
-        await self.message.edit(embed=None, view=self)
-
     def remove_all(self):
         '''
         Removes all children from this view.
         '''
         while self.children:
             self.remove_item(self.children[0])
+
+    async def update(self, **kwargs):
+        '''
+        Edit self.message
+        '''
+        if 'view' not in kwargs:
+            kwargs['view'] = self
+        self.message = await self.message.edit(**kwargs)
 
     async def interacted(self, button: Button, interaction: discord.Interaction):
         '''
@@ -308,7 +319,8 @@ class Squares():
     def __init__(self, ctx: commands.Context):
         self.ctx = ctx
         self.views: list[SquaresView] = None
-        self.level = 0
+
+        self.level = 10
         self.stage = 0
         self.lives = 3
         self.strikes = 0
@@ -346,24 +358,29 @@ class Squares():
         values = [True]*(self.level + 2) + [False]*(grid[0]*grid[1] - (self.level + 2))
         random.shuffle(values)
 
-        await self.views[0].generate(rows=min(5, grid[1]), columns=grid[0], values=values[:grid[0]*min(5, grid[1])])
-        await self.views[1].generate(rows=max(0, grid[1]-5), columns=grid[0], values=values[grid[0]*min(5, grid[1]):])
+        self.views[0].generate(rows=min(5, grid[1]), columns=grid[0], values=values[:grid[0]*min(5, grid[1])])
+        self.views[1].generate(rows=max(0, grid[1]-5), columns=grid[0], values=values[grid[0]*min(5, grid[1]):])
+
+        await self.views[0].update(content=f"`Level: {self.level}   Lives: {'♥'*self.lives}`", embed=None)
+        await self.views[1].update()
 
         await asyncio.sleep(1)
 
         for view in self.views:
-            await view.reveal()
+            view.reveal()
+            await view.update()
 
         await asyncio.sleep(2)
 
         for view in self.views:
-            await view.hide()
+            view.hide()
+            await view.update()
 
     async def interacted(self, button: Button, interaction: discord.Interaction):
         '''
         Button interaction callback.
         '''
-        if self.level == 0:
+        if self.level == 10:
             await interaction.response.defer()
             self.level += 1
             await self.scramble()
@@ -379,15 +396,13 @@ class Squares():
                 await interaction.response.edit_message(view=button.view)
                 return
 
-            await interaction.response.defer()
-            await self.failed()
+            await self.failed(button=button, interaction=interaction)
             return
 
         self.stage += 1
 
         if self.stage == self.level + 2:
-            await interaction.response.defer()
-            await self.passed()
+            await self.passed(button=button, interaction=interaction)
             return
 
         button.style = discord.ButtonStyle.blurple
@@ -395,7 +410,7 @@ class Squares():
 
         await interaction.response.edit_message(view=button.view)
 
-    async def passed(self):
+    async def passed(self, button: Button, interaction: discord.Interaction):
         '''
         User passed the level.
         '''
@@ -404,15 +419,15 @@ class Squares():
         self.strikes = 0
 
         for view in self.views:
-            button: Button
-            for button in view.children:
-                if button.value:
-                    button.style = discord.ButtonStyle.green
-                button.disabled = True
+            b: Button
+            for b in view.children:
+                if b.value:
+                    b.style = discord.ButtonStyle.green
+                b.disabled = True
 
-        for view in self.views:
-            if view.children:
-                await view.message.edit(embed=None, view=view)
+        view = self.views[0] if self.views[0] != button.view else self.views[1]
+        await interaction.response.edit_message(view=button.view)
+        await view.update()
         
         await asyncio.sleep(1)
 
@@ -421,7 +436,7 @@ class Squares():
         else:
             await self.scramble()
 
-    async def failed(self):
+    async def failed(self, button: Button, interaction: discord.Interaction):
         '''
         User failed the level.
         '''
@@ -430,15 +445,15 @@ class Squares():
         self.strikes = 0
 
         for view in self.views:
-            button: Button
-            for button in view.children:
-                if button.disabled:
-                    button.style = discord.ButtonStyle.red
-                button.disabled = True
+            b: Button
+            for b in view.children:
+                if b.disabled:
+                    b.style = discord.ButtonStyle.red
+                b.disabled = True
 
-        for view in self.views:
-            if view.children:
-                await view.message.edit(embed=None, view=view)
+        view = self.views[0] if self.views[0] != button.view else self.views[1]
+        await interaction.response.edit_message(view=button.view)
+        await view.update()
 
         await asyncio.sleep(1)
 
@@ -477,7 +492,198 @@ class Squares():
         embed = discord.Embed(title=f"Your Score: {score}", description=description)
 
         await self.views[1].message.delete()
-        await self.views[0].message.edit(content=None, embed=embed, view=None)
+        await self.views[0].update(content=None, embed=embed, view=None)
         
         for view in self.views:
             view.stop()
+
+# Sequence Memory
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+
+class SequenceView(discord.ui.View):
+    def __init__(self, ctx: commands.Context, timeout: int = 180):
+        super().__init__(timeout=timeout)
+        self.ctx = ctx
+        self.controller: Chimp = None
+        self.message: discord.Message = None
+
+    async def on_timeout(self):
+        await self.controller.completed()
+
+    def generate(self, rows: int, columns: int, values: list[int]):
+        '''
+        Adds buttons and assigns numbers.
+        '''
+        self.remove_all()
+
+        for i in range(rows):
+            for j in range(columns):
+                self.add_item(Button(disabled=True, row=i))
+
+        button: Button
+        for i, button in enumerate(self.children):
+            button.value = values[i]
+
+    def remove_all(self):
+        '''
+        Removes all children from this view.
+        '''
+        while self.children:
+            self.remove_item(self.children[0])
+
+    async def update(self, **kwargs):
+        '''
+        Edit self.message
+        '''
+        if 'view' not in kwargs:
+            kwargs['view'] = self
+        self.message = await self.message.edit(**kwargs)
+
+    async def interacted(self, button: Button, interaction: discord.Interaction):
+        '''
+        Button interaction callback.
+        '''
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.defer()
+            return
+        
+        await self.controller.interacted(button=button, interaction=interaction)
+
+class Sequence():
+    def __init__(self, ctx: commands.Context):
+        self.ctx = ctx
+        self.view: SequenceView
+
+        self.sequence = []
+        self.level = 0
+        self.stage = 0
+
+    async def start(self):
+        '''
+        Start the sequence memory test.
+        '''
+        embed = discord.Embed(title="Sequence Memory Test", description="Memorize the pattern.")
+
+        self.view = SequenceView(ctx=self.ctx)
+        self.view.controller = self
+        self.view.add_item(Button(label="Start", style=discord.ButtonStyle.green))
+        
+        self.view.message = await self.ctx.send(embed=embed, view=self.view)
+
+    def append_sequence(self):
+        '''
+        Adds a random number to the sequence.
+        '''
+        n = random.randint(0, 8)
+        if len(self.sequence) > 0:
+            while (n == self.sequence[-1]): n = random.randint(0, 8)
+
+        self.sequence.append(n)
+
+    async def show_sequence(self):
+        button: Button
+        for button in self.view.children:
+            button.disabled = True
+            button.style = discord.ButtonStyle.grey
+        
+        await self.view.update(content=f"`Level: {self.level}`", embed=None)
+        await asyncio.sleep(1)
+
+        for i in self.sequence:
+            self.view.children[i].style = discord.ButtonStyle.blurple
+            await self.view.update()
+            await asyncio.sleep(0.5)
+            self.view.children[i].style = discord.ButtonStyle.grey
+        
+        for button in self.view.children:
+            button.disabled = False
+
+        await self.view.update()
+
+    async def interacted(self, button: Button, interaction: discord.Interaction):
+        '''
+        Button interaction callback.
+        '''
+        if self.level == 0:
+            await interaction.response.defer()
+            self.level += 1
+            self.view.generate(rows=3, columns=3, values=list(range(9)))
+            self.append_sequence()
+            await self.show_sequence()
+            return
+
+        if button.value != self.sequence[self.stage]:
+            await self.failed(button=button, interaction=interaction)
+            return
+
+        self.stage += 1
+
+        if self.stage == self.level:
+            await self.passed(button=button, interaction=interaction)
+            return
+
+        await interaction.response.defer()
+
+    async def passed(self, button: Button, interaction: discord.Interaction):
+        '''
+        User passed the level.
+        '''
+        self.level += 1
+        self.stage = 0
+
+        button: Button
+        for button in self.view.children:
+            button.style = discord.ButtonStyle.green
+            button.disabled = True
+
+        await interaction.response.edit_message(view=button.view)
+        await asyncio.sleep(1)
+        
+        self.append_sequence()
+        await self.show_sequence()
+
+    async def failed(self, button: Button, interaction: discord.Interaction):
+        '''
+        User failed the level.
+        '''
+        button: Button
+        for button in self.view.children:
+            button.style = discord.ButtonStyle.red
+            button.disabled = True
+
+        await interaction.response.edit_message(view=button.view)
+        await asyncio.sleep(1)
+
+        await self.completed()
+
+    async def completed(self):
+        '''
+        User completed the test.
+        '''
+        score = self.level - 1
+        leaderboard = get_leaderboard()
+
+        if 'sequence' not in leaderboard:
+            leaderboard['sequence'] = {}
+
+        # if user not in leaderboard or user has new highscore
+        if str(self.ctx.author.id) not in leaderboard['sequence'] or (score > 0 and score > leaderboard['sequence'][str(self.ctx.author.id)]):
+            leaderboard['sequence'][str(self.ctx.author.id)] = score
+
+        # sort leaderboard
+        leaderboard['sequence'] = dict(sorted(leaderboard['sequence'].items(), key=lambda item: item[1], reverse=True))
+        if len(leaderboard['sequence']) > 5:
+            leaderboard['sequence'] = leaderboard['sequence'][:5]
+
+        # save leaderboard
+        with open(JSON_PATH, 'w') as f:
+            json.dump(leaderboard, f, indent=4, default=str)
+
+        description="**Leaderboard**"
+        for id in leaderboard['sequence']:
+            description += f"\n**{leaderboard['sequence'][id]}**" + " \u200b"*3 + "\u00B7" + " \u200b"*3 + f"<@{id}>"
+
+        embed = discord.Embed(title=f"Your Score: {score}", description=description)
+
+        await self.view.update(content=None, embed=embed, view=None)
+        self.view.stop()

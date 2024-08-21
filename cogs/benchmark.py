@@ -1,4 +1,4 @@
-from modules.benchmark_tools import Chimp, Squares
+from modules.benchmark_tools import Chimp, Squares, Sequence
 
 import discord
 from discord.ext import commands
@@ -15,6 +15,10 @@ class BenchmarkCog(commands.Cog):
     @commands.hybrid_command(brief='Visual Memory', description='Visual Memory: Remember an increasingly large board of squares.')
     async def squares(self, ctx: commands.Context):
         await Squares(ctx=ctx).start()
+
+    @commands.hybrid_command(brief='Sequence Memory', description='Sequence Memory: Remember an increasingly long pattern of button presses.')
+    async def sequence(self, ctx: commands.Context):
+        await Sequence(ctx=ctx).start()
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(BenchmarkCog(bot))
