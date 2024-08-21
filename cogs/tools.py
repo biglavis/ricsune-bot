@@ -24,7 +24,7 @@ class ToolCog(commands.Cog):
     # sync commands to the current server
     @commands.command(hidden=True)
     @commands.is_owner()
-    #@commands.cooldown(1, 90)
+    # @commands.cooldown(1, 90)
     async def sync(self, ctx: commands.Context):
         async with ctx.channel.typing():
             self.bot.tree.copy_global_to(guild=ctx.guild)
@@ -34,7 +34,7 @@ class ToolCog(commands.Cog):
     # unsync commands to the current server
     @commands.command(hidden=True)
     @commands.is_owner()
-    #@commands.cooldown(1, 90)
+    # @commands.cooldown(1, 90)
     async def unsync(self, ctx: commands.Context):
         async with ctx.channel.typing():
             self.bot.tree.clear_commands(guild=ctx.guild)

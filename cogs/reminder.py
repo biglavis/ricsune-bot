@@ -216,7 +216,7 @@ class ReminderCog(commands.Cog):
             return
         
         # delete recent
-        elif indexes == None:
+        if indexes == None:
             recent = sorted(user['reminders'], key=lambda x: x['modified'])[-1]
 
             if now - recent['modified'] < timedelta(minutes=3):
