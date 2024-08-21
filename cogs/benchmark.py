@@ -6,6 +6,7 @@ from discord.ext import commands
 class BenchmarkCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        print(f"cog: {self.qualified_name} loaded")
 
     @commands.hybrid_command(brief='Chimp Test', description='Chimp Test: Are you smarter than a chimpanzee?')
     async def chimp(self, ctx: commands.Context):
