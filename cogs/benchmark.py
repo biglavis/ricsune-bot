@@ -1,5 +1,5 @@
 import json
-from modules.benchmark_tools import Chimp, Squares, Sequence
+from modules.benchmark_tools import Chimp, Squares, Sequence, show_leaderboard
 
 import discord
 from discord.ext import commands
@@ -12,6 +12,36 @@ def get_leaderboard() -> dict:
             return json.load(f)
     except FileNotFoundError:
         return {}
+    
+class BenchmarkView(discord.ui.View):
+    def __init__(self, ctx: commands.Context, timeout: int = 180):
+        super().__init__(timeout=timeout)
+        self.ctx = ctx
+        self.message: discord.Message = None
+    
+    @discord.ui.button(label="Chimp Test", style=discord.ButtonStyle.green)
+    async def chimp_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        await Chimp(ctx=self.ctx).start()
+        await self.message.delete()
+
+    @discord.ui.button(label="Visual Memory", style=discord.ButtonStyle.green)
+    async def squares_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        await Squares(ctx=self.ctx).start()
+        await self.message.delete()
+
+    @discord.ui.button(label="Sequence Memory", style=discord.ButtonStyle.green)
+    async def sequence_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        await Sequence(ctx=self.ctx).start()
+        await self.message.delete()
+
+    @discord.ui.button(label="Leaderboard", style=discord.ButtonStyle.grey)
+    async def leaderboard_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        await show_leaderboard(ctx=self.ctx)
+        await self.message.delete()
 
 class BenchmarkCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -32,33 +62,12 @@ class BenchmarkCog(commands.Cog):
 
     @commands.hybrid_command(brief='See the human benchmark leaderboard.', description='See the human benchmark leaderboard.')
     async def leaderboard(self, ctx: commands.Context):
-        benchmark_dict = {
-            "chimp" : "Chimp Test",
-            "squares" : "Visual Memory",
-            "sequence" : "Sequence Memory"
-        }
-        leaderboard = get_leaderboard()
-        embed = discord.Embed(title="Human Benchmark Leaderboard")
+        await show_leaderboard(ctx=ctx)
 
-        for benchmark in ["chimp", "squares", "sequence"]:
-            if benchmark not in leaderboard:
-                leaderboard[benchmark] = {}
-
-                # save leaderboard
-                with open(JSON_PATH, 'w') as f:
-                    json.dump(leaderboard, f, indent=4, default=str)
-                
-            if leaderboard[benchmark]:
-                value = ""
-                for id in leaderboard[benchmark]:
-                    value += f"**{leaderboard[benchmark][id]}**" + " \u200b"*3 + "\u00B7" + " \u200b"*3 + f"<@{id}>\n"
-            else:
-                value = "[No record]"
-
-            embed.add_field(name=benchmark_dict[benchmark], value=value, inline=False)
-            embed.set_footer(text="Test yourself with /benchmark")
-
-        await ctx.send(embed=embed)
+    @commands.hybrid_command(brief='Human Benchmark', description='Human Benchmark')
+    async def benchmark(self, ctx: commands.Context):
+        view = BenchmarkView(ctx=ctx)
+        view.message = await ctx.send(view=view)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(BenchmarkCog(bot))

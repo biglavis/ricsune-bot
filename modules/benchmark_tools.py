@@ -15,6 +15,35 @@ def get_leaderboard() -> dict:
             return json.load(f)
     except FileNotFoundError:
         return {}
+    
+async def show_leaderboard(ctx: commands.Context):
+        benchmark_dict = {
+            "chimp" : "Chimp Test",
+            "squares" : "Visual Memory",
+            "sequence" : "Sequence Memory"
+        }
+        lb = get_leaderboard()
+        embed = discord.Embed(title="Human Benchmark Leaderboard")
+
+        for benchmark in ["chimp", "squares", "sequence"]:
+            if benchmark not in lb:
+                lb[benchmark] = {}
+
+                # save leaderboard
+                with open(JSON_PATH, 'w') as f:
+                    json.dump(lb, f, indent=4, default=str)
+                
+            if lb[benchmark]:
+                value = ""
+                for id in lb[benchmark]:
+                    value += f"**{lb[benchmark][id]}**" + " \u200b"*3 + "\u00B7" + " \u200b"*3 + f"<@{id}>\n"
+            else:
+                value = "[No record]"
+
+            embed.add_field(name=benchmark_dict[benchmark], value=value, inline=False)
+            embed.set_footer(text="Test yourself with /benchmark")
+
+        await ctx.send(embed=embed)
 
 class Button(discord.ui.Button):
     def __init__(self, label: str = "\u200b", style: discord.ButtonStyle = discord.ButtonStyle.grey, custom_id: str = None, disabled: bool = False, row: int = None):
@@ -320,7 +349,7 @@ class Squares():
         self.ctx = ctx
         self.views: list[SquaresView] = None
 
-        self.level = 10
+        self.level = 0
         self.stage = 0
         self.lives = 3
         self.strikes = 0
@@ -338,7 +367,7 @@ class Squares():
         self.views[0].add_item(Button(label="Start", style=discord.ButtonStyle.green))
 
         self.views[0].message = await self.ctx.send(embed=embed, view=self.views[0])
-        self.views[1].message = await self.ctx.send(content="\u200b")
+        self.views[1].message = await self.ctx.channel.send(content="\u200b")
 
     async def scramble(self):
         '''
@@ -380,7 +409,7 @@ class Squares():
         '''
         Button interaction callback.
         '''
-        if self.level == 10:
+        if self.level == 0:
             await interaction.response.defer()
             self.level += 1
             await self.scramble()
