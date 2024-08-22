@@ -8,7 +8,7 @@ class RerollView(discord.ui.View):
         self.participants = participants
         self.num_teams = num_teams
 
-    @discord.ui.button(label="🎲", style=discord.ButtonStyle.green)
+    @discord.ui.button(label="↻", style=discord.ButtonStyle.green)
     async def reroll(self, interaction: discord.Interaction, button: discord.ui.Button):
         participants = random.sample(self.participants, len(self.participants))
 
