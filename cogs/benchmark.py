@@ -22,26 +22,26 @@ class BenchmarkView(discord.ui.View):
     @discord.ui.button(label="Chimp Test", style=discord.ButtonStyle.green)
     async def chimp_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        await Chimp(ctx=self.ctx).start()
         await self.message.delete()
+        await Chimp(ctx=self.ctx).start()
 
     @discord.ui.button(label="Visual Memory", style=discord.ButtonStyle.green)
     async def squares_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        await Squares(ctx=self.ctx).start()
         await self.message.delete()
+        await Squares(ctx=self.ctx).start()
 
     @discord.ui.button(label="Sequence Memory", style=discord.ButtonStyle.green)
     async def sequence_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        await Sequence(ctx=self.ctx).start()
         await self.message.delete()
+        await Sequence(ctx=self.ctx).start()
 
     @discord.ui.button(label="Leaderboard", style=discord.ButtonStyle.grey)
     async def leaderboard_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        await show_leaderboard(ctx=self.ctx)
         await self.message.delete()
+        await show_leaderboard(ctx=self.ctx)
 
 class BenchmarkCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
