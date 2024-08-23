@@ -8,13 +8,12 @@ import discord
 from discord.ext import commands, tasks
 
 JSON_PATH = 'json//reminders.json'
+DATE_PATTERN = r"[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}-[0-9]{2}:[0-9]{2}"
 
 def date_hook(json_dict):
     for (key, value) in json_dict.items():
-        try:
+        if isinstance(value, str) and re.match(DATE_PATTERN, value):
             json_dict[key] = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S%z")
-        except:
-            pass
     return json_dict
 
 class ReminderCog(commands.Cog):
@@ -31,9 +30,9 @@ class ReminderCog(commands.Cog):
         # remove expired reminders
         now = datetime.datetime.now(datetime.timezone.utc).astimezone()
         for id in self.db:
-            expired = [reminder for reminder in self.db[id]['reminders'] if reminder['time'] <= now]
+            expired = [reminder for reminder in self.db[id] if reminder['time'] <= now]
             for reminder in expired:
-                self.db[id]['reminders'].remove(reminder)
+                self.db[id].remove(reminder)
 
         # save reminders
         with open(JSON_PATH, 'w') as f:
@@ -45,7 +44,7 @@ class ReminderCog(commands.Cog):
         print(f'cog: {self.qualified_name} loaded')
 
     def add_user(self, id: int):
-        self.db[str(id)] = {'reminders': []}
+        self.db[str(id)] = []
         with open(JSON_PATH, 'w') as f:
             json.dump(self.db, f, indent=4, default=str)
 
@@ -92,10 +91,10 @@ class ReminderCog(commands.Cog):
             return
 
         # add reminder
-        user['reminders'].append({'time': time, 'task': task, 'url': url, 'created': now, 'modified': now})
+        user.append({'time': time, 'task': task, 'url': url, 'created': now, 'modified': now})
 
         # sort reminders by time
-        user['reminders'] = sorted(user['reminders'], key=lambda x: x['time'])
+        user = sorted(user, key=lambda x: x['time'])
 
         # save reminders
         with open(JSON_PATH, 'w') as f:
@@ -123,11 +122,11 @@ class ReminderCog(commands.Cog):
         user = self.db[str(id)]
 
         # reply
-        if len(user['reminders']) == 0:
+        if len(user) == 0:
             embed = discord.Embed(title="Your Reminders:", description="You have no reminders.")
         else:
             description = ""
-            for i, reminder in enumerate(user['reminders']):
+            for i, reminder in enumerate(user):
                 description += f'`[{i+1}]` | **<t:{round(reminder["time"].timestamp())}:R>**\n'
                 if reminder["task"] != "":
                     description = description[:-1] + " \u200b"*5 + f'**>** *{reminder["task"]}*\n'
@@ -152,30 +151,30 @@ class ReminderCog(commands.Cog):
         user = self.db[str(id)]
 
         # if user has no reminders
-        if len(user['reminders']) == 0:
+        if len(user) == 0:
             await error(ctx, "You have no reminders.")
             return 
         
         # get recent
         if index == None:
-            recent = sorted(user['reminders'], key=lambda x: x['modified'])[-1]
+            recent = sorted(user, key=lambda x: x['modified'])[-1]
 
             if now - recent['modified'] < timedelta(minutes=3):
-                index = user['reminders'].index(recent) + 1
+                index = user.index(recent) + 1
             else:
                 await error(ctx, "Reminder not found.")
                 return 
         
         # if invalid index
-        elif abs(index) > len(user['reminders']):
+        elif abs(index) > len(user):
             await error(ctx, "Invalid index.")
             return
         
         # get reminder
-        reminder = user['reminders'][abs(index)-1]
+        reminder = user[abs(index)-1]
 
         # update modified
-        user['reminders'][abs(index)-1]['modified'] = now
+        user[abs(index)-1]['modified'] = now
         
         # save reminders
         with open(JSON_PATH, 'w') as f:
@@ -211,27 +210,27 @@ class ReminderCog(commands.Cog):
         user = self.db[str(id)]
 
         # if user has no reminders
-        if len(user['reminders']) == 0:
+        if len(user) == 0:
             await error(ctx, "You have no reminders.")
             return
         
         # delete recent
         if indexes == None:
-            recent = sorted(user['reminders'], key=lambda x: x['modified'])[-1]
+            recent = sorted(user, key=lambda x: x['modified'])[-1]
 
             if now - recent['modified'] < timedelta(minutes=3):
-                indexes = [user['reminders'].index(recent) + 1]
+                indexes = [user.index(recent) + 1]
             else:
                 await error(ctx, "Reminder not found.")
                 return 
 
         # delete all
         elif matched := re.search(r"all", indexes):
-            indexes = list(range(1, len(user['reminders']) + 1))
+            indexes = list(range(1, len(user) + 1))
 
         # delete indexed
         elif matched := re.findall(r"\d+", indexes):
-            indexes = [int(i) for i in matched if int(i) <= len(user['reminders'])]
+            indexes = [int(i) for i in matched if int(i) <= len(user)]
             indexes.sort()
 
         # if invalid index
@@ -244,11 +243,11 @@ class ReminderCog(commands.Cog):
             return
         
         # get reminders
-        reminders = [user['reminders'][(i-1)] for i in indexes]
+        reminders = [user[(i-1)] for i in indexes]
         
         # delete reminders
         for reminder in reminders:
-            user['reminders'].remove(reminder)
+            user.remove(reminder)
 
         # save reminders
         with open(JSON_PATH, 'w') as f:
@@ -273,10 +272,10 @@ class ReminderCog(commands.Cog):
         # reminders are sorted by time
         # for each user, check top reminder
         for id in self.db:
-            if len(self.db[id]['reminders']) == 0:
+            if len(self.db[id]) == 0:
                 pass
             else:
-                reminder = self.db[id]['reminders'][0]
+                reminder = self.db[id][0]
 
                 if reminder['time'] <= now:
                     author = await self.bot.fetch_user(int(id))
@@ -293,7 +292,7 @@ class ReminderCog(commands.Cog):
                     await author.send(embed=embed)
 
                     # delete reminder
-                    self.db[id]['reminders'].remove(reminder)
+                    self.db[id].remove(reminder)
 
                     # save reminders
                     with open(JSON_PATH, 'w') as f:
