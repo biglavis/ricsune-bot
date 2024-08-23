@@ -1,5 +1,5 @@
 import json
-from modules.benchmark_tools import Chimp, Squares, Sequence, Numbers, show_leaderboard
+from modules.benchmark_tools import Chimp, Squares, Sequence, show_leaderboard
 
 import discord
 from discord.ext import commands
@@ -59,10 +59,6 @@ class BenchmarkCog(commands.Cog):
     @commands.hybrid_command(brief='Sequence Memory', description='Sequence Memory: Remember an increasingly long pattern of button presses.')
     async def sequence(self, ctx: commands.Context):
         await Sequence(ctx=ctx).start()
-
-    @commands.hybrid_command(brief='Sequence Memory', description='Sequence Memory: Remember an increasingly long pattern of button presses.')
-    async def numbers(self, ctx: commands.Context):
-        await Numbers(ctx=ctx).start()
 
     @commands.hybrid_command(brief='See the human benchmark leaderboard.', description='See the human benchmark leaderboard.')
     async def leaderboard(self, ctx: commands.Context):
