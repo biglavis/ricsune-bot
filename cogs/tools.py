@@ -1,4 +1,5 @@
 import os
+import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 
 import discord
@@ -68,16 +69,87 @@ class ToolCog(commands.Cog):
 
     @commands.hybrid_command(brief='Display the avatar of you or another member.', description='Display the avatar of you or another member.')
     async def avatar(self, ctx: commands.Context, member: discord.Member = None):
-        if member is None:
+        if not member:
             member = ctx.author
         await ctx.reply(member.avatar)
 
     @commands.hybrid_command(brief='Display the server avatar of you or another member.', description='Display the server avatar of you or another member.')
     async def savatar(self, ctx: commands.Context, member: discord.Member = None):
-        if member is None:
+        if not member:
             member = ctx.author
 
         await ctx.reply(member.display_avatar)
+
+    @commands.hybrid_command(brief='Get message history.', description='Get message history. Default limit: 1000 messages.')
+    async def history(self, ctx: commands.Context, limit: int = 1000):
+        if limit < 1:
+            return
+        if limit > 100000:
+            raise Exception("Max limit is 100000.")
+    
+        msg: discord.Message = None
+        if limit > 999:
+            msg = await ctx.reply(embed=discord.Embed(title=f"0%", description="This may take a while... <a:loading:1276652002893500500>"))
+
+        percentage = 5
+        iter_count = 0
+        msg_count = 0
+        async with ctx.channel.typing():
+            users = {}
+            async for message in ctx.channel.history(limit=limit):
+                iter_count += 1
+                if msg and (100 * iter_count / limit) > percentage:
+                    await msg.edit(embed=discord.Embed(title=f"{percentage}%", description="This may take a while... <a:loading:1276652002893500500>"))
+                    percentage += 5
+
+                if message.author.id == self.bot.user.id:
+                    continue
+
+                msg_count += 1
+                if message.author.id not in users:
+                    users[message.author.id] = {'name' : message.author.display_name, 'sent' : 0}
+                users[message.author.id]['sent'] += 1
+
+            # sort descending
+            users = dict(sorted(users.items(), key=lambda item: item[1]['sent'], reverse=True))
+
+            description = ""
+            for id in users:
+                description += f"<@{id}>: {users[id]['sent']}\n"
+
+            embed=discord.Embed(title="Messages Sent", description=description)
+            embed.set_image(url="attachment://history.png")
+
+            # group users < 5%
+            if (lurkers := [users.pop(id) for id in list(users) if (100 * users[id]['sent'] / msg_count) < 5]):
+                users[None] = {'name' : 'Lurkers', 'sent' : sum([lurker['sent'] for lurker in lurkers])}
+
+            # create pie chart
+            fig, ax = plt.subplots()
+
+            patches, texts, pcts = ax.pie(
+                x=[user['sent'] for user in users.values()], 
+                labels=[user['name'] for user in users.values()], 
+                autopct='%1.1f%%',
+                startangle=90,
+                counterclock=False
+            )
+
+            for i, patch in enumerate(patches):
+                texts[i].set_color(patch.get_facecolor())
+
+            plt.setp(pcts, color='white')
+            plt.setp(texts, fontweight=600)
+
+            # save figure
+            fig.savefig("./downloads/history.png", bbox_inches='tight', dpi=300)
+
+            if msg:
+                await msg.delete()
+            await ctx.send(embed=embed, file=discord.File(fp="downloads/history.png"))
+
+            # delete figure
+            os.remove("downloads/history.png")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ToolCog(bot))
