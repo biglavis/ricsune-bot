@@ -251,8 +251,6 @@ class Chimp():
 
         # sort leaderboard
         leaderboard['chimp'] = dict(sorted(leaderboard['chimp'].items(), key=lambda item: item[1], reverse=True))
-        if len(leaderboard['chimp']) > 5:
-            leaderboard['chimp'] = leaderboard['chimp'][:5]
 
         # save leaderboard
         with open(JSON_PATH, 'w') as f:
@@ -507,8 +505,6 @@ class Squares():
 
         # sort leaderboard
         leaderboard['squares'] = dict(sorted(leaderboard['squares'].items(), key=lambda item: item[1], reverse=True))
-        if len(leaderboard['squares']) > 5:
-            leaderboard['squares'] = leaderboard['squares'][:5]
 
         # save leaderboard
         with open(JSON_PATH, 'w') as f:
@@ -701,8 +697,6 @@ class Sequence():
 
         # sort leaderboard
         leaderboard['sequence'] = dict(sorted(leaderboard['sequence'].items(), key=lambda item: item[1], reverse=True))
-        if len(leaderboard['sequence']) > 5:
-            leaderboard['sequence'] = leaderboard['sequence'][:5]
 
         # save leaderboard
         with open(JSON_PATH, 'w') as f:
