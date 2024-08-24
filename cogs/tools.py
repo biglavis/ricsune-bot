@@ -1,4 +1,5 @@
 import os
+import time
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 
@@ -91,16 +92,16 @@ class ToolCog(commands.Cog):
         if limit > 999:
             msg = await ctx.reply(embed=discord.Embed(title=f"0%", description="This may take a while... <a:loading:1276652002893500500>"))
 
-        percentage = 10
+        timer = time.time()
         iter_count = 0
         msg_count = 0
         async with ctx.channel.typing():
             users = {}
             async for message in ctx.channel.history(limit=limit):
                 iter_count += 1
-                if msg and (100 * iter_count / limit) > percentage:
-                    await msg.edit(embed=discord.Embed(title=f"{percentage}%", description="This may take a while... <a:loading:1276652002893500500>"))
-                    percentage += 10
+                if msg and (time.time() - timer) > 5:
+                    await msg.edit(embed=discord.Embed(title=f"{round(100 * iter_count / limit)}%", description="This may take a while... <a:loading:1276652002893500500>"))
+                    timer = time.time()
 
                 if message.author.bot:
                     continue
