@@ -91,7 +91,7 @@ class ToolCog(commands.Cog):
         if limit > 999:
             msg = await ctx.reply(embed=discord.Embed(title=f"0%", description="This may take a while... <a:loading:1276652002893500500>"))
 
-        percentage = 5
+        percentage = 10
         iter_count = 0
         msg_count = 0
         async with ctx.channel.typing():
@@ -100,9 +100,9 @@ class ToolCog(commands.Cog):
                 iter_count += 1
                 if msg and (100 * iter_count / limit) > percentage:
                     await msg.edit(embed=discord.Embed(title=f"{percentage}%", description="This may take a while... <a:loading:1276652002893500500>"))
-                    percentage += 5
+                    percentage += 10
 
-                if message.author.id == self.bot.user.id:
+                if message.author.bot:
                     continue
 
                 msg_count += 1
