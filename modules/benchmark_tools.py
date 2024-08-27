@@ -1,6 +1,5 @@
 import random
 import json
-import datetime
 import asyncio
 
 import discord
@@ -57,9 +56,8 @@ class Button(discord.ui.Button):
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 class ChimpView(discord.ui.View):
-    def __init__(self, ctx: commands.Context, timeout: int = 180):
+    def __init__(self, timeout: int = 180):
         super().__init__(timeout=timeout)
-        self.ctx = ctx
         self.controller: Chimp = None
         self.message: discord.Message = None
 
@@ -122,10 +120,6 @@ class ChimpView(discord.ui.View):
         '''
         Button interaction callback.
         '''
-        if interaction.user.id != self.ctx.author.id:
-            await interaction.response.defer()
-            return
-        
         await self.controller.interacted(button=button, interaction=interaction)
 
 class Chimp():
@@ -144,7 +138,7 @@ class Chimp():
         description = "Click the squares in order according to their numbers.\nThe test will get progressively harder."
         embed = discord.Embed(title="Are You Smarter Than a Chimpanzee?", description=description)
 
-        self.view = ChimpView(ctx=self.ctx)
+        self.view = ChimpView()
         self.view.controller = self
         self.view.add_item(Button(label="Start", style=discord.ButtonStyle.green))
         
@@ -166,6 +160,10 @@ class Chimp():
         '''
         Button interaction callback.
         '''
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.defer()
+            return
+        
         if self.level == 0:
             await interaction.response.defer()
             self.level = 4
@@ -269,9 +267,8 @@ class Chimp():
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 class SquaresView(discord.ui.View):
-    def __init__(self, ctx: commands.Context, timeout: int = 180):
+    def __init__(self, timeout: int = 180):
         super().__init__(timeout=timeout)
-        self.ctx = ctx
         self.controller: Squares = None
         self.message: discord.Message = None
 
@@ -336,10 +333,6 @@ class SquaresView(discord.ui.View):
         '''
         Button interaction callback.
         '''
-        if interaction.user.id != self.ctx.author.id:
-            await interaction.response.defer()
-            return
-        
         await self.controller.interacted(button=button, interaction=interaction)
 
 class Squares():
@@ -356,7 +349,7 @@ class Squares():
         '''
         Start the visual memory test.
         '''
-        self.views = [SquaresView(ctx=self.ctx), SquaresView(ctx=self.ctx)]
+        self.views = [SquaresView(), SquaresView()]
 
         self.views[0].controller = self
         self.views[1].controller = self
@@ -407,6 +400,10 @@ class Squares():
         '''
         Button interaction callback.
         '''
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.defer()
+            return
+    
         if self.level == 0:
             await interaction.response.defer()
             self.level += 1
@@ -526,9 +523,8 @@ class Squares():
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 class SequenceView(discord.ui.View):
-    def __init__(self, ctx: commands.Context, timeout: int = 180):
+    def __init__(self, timeout: int = 180):
         super().__init__(timeout=timeout)
-        self.ctx = ctx
         self.controller: Chimp = None
         self.message: discord.Message = None
 
@@ -568,10 +564,6 @@ class SequenceView(discord.ui.View):
         '''
         Button interaction callback.
         '''
-        if interaction.user.id != self.ctx.author.id:
-            await interaction.response.defer()
-            return
-        
         await self.controller.interacted(button=button, interaction=interaction)
 
 class Sequence():
@@ -589,7 +581,7 @@ class Sequence():
         '''
         embed = discord.Embed(title="Sequence Memory Test", description="Memorize the pattern.")
 
-        self.view = SequenceView(ctx=self.ctx)
+        self.view = SequenceView()
         self.view.controller = self
         self.view.add_item(Button(label="Start", style=discord.ButtonStyle.green))
         
@@ -629,6 +621,10 @@ class Sequence():
         '''
         Button interaction callback.
         '''
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.defer()
+            return
+    
         if self.level == 0:
             await interaction.response.defer()
             self.level += 1
