@@ -355,10 +355,12 @@ class Squares():
         self.views[1].controller = self
 
         embed = discord.Embed(title="Visual Memory Test", description="Memorize the squares.")
+
         self.views[0].add_item(Button(label="Start", style=discord.ButtonStyle.green))
+        self.views[1].add_item(Button(label="[placeholder]", style=discord.ButtonStyle.grey, disabled=True))
 
         self.views[0].message = await self.ctx.send(embed=embed, view=self.views[0])
-        self.views[1].message = await self.ctx.channel.send(content="\u200b")
+        self.views[1].message = await self.ctx.channel.send(view=self.views[1])
 
     async def scramble(self):
         '''
@@ -378,23 +380,23 @@ class Squares():
         values = [True]*(self.level + 2) + [False]*(grid[0]*grid[1] - (self.level + 2))
         random.shuffle(values)
 
-        self.views[0].generate(rows=min(5, grid[1]), columns=grid[0], values=values[:grid[0]*min(5, grid[1])])
-        self.views[1].generate(rows=max(0, grid[1]-5), columns=grid[0], values=values[grid[0]*min(5, grid[1]):])
+        for i in range(self.level // 10 + 1):
+            self.views[i].generate(rows=min(5, grid[1]-i*5), columns=grid[0], values=values[i*25:min((i+1)*25, len(values))])
 
         await self.views[0].update(content=f"`Level: {self.level}   Lives: {'♥'*self.lives}`", embed=None)
         await self.views[1].update()
 
         await asyncio.sleep(1)
 
-        for view in self.views:
-            view.reveal()
-            await view.update()
+        for i in range(self.level // 10 + 1):
+            self.views[i].reveal()
+        [await view.update() for view in self.views]
 
         await asyncio.sleep(2)
 
-        for view in self.views:
-            view.hide()
-            await view.update()
+        for i in range(self.level // 10 + 1):
+            self.views[i].hide()
+        [await view.update() for view in self.views]
 
     async def interacted(self, button: Button, interaction: discord.Interaction):
         '''
@@ -442,9 +444,9 @@ class Squares():
         self.stage = 0
         self.strikes = 0
 
-        for view in self.views:
+        for i in range(self.level // 10 + 1):
             b: Button
-            for b in view.children:
+            for b in self.views[i].children:
                 if b.value:
                     b.style = discord.ButtonStyle.green
                 b.disabled = True
@@ -468,9 +470,9 @@ class Squares():
         self.lives -= 1
         self.strikes = 0
 
-        for view in self.views:
+        for i in range(self.level // 10 + 1):
             b: Button
-            for b in view.children:
+            for b in self.views[i].children:
                 if b.disabled:
                     b.style = discord.ButtonStyle.red
                 b.disabled = True
