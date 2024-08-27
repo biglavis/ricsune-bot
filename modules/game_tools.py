@@ -16,6 +16,7 @@ class Button(discord.ui.Button):
 
 # Minesweeper
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+NUM_MINES = 8
 
 class MinesweeperView(discord.ui.View):
     def __init__(self, index: int, timeout: int = 180):
@@ -38,11 +39,6 @@ class MinesweeperView(discord.ui.View):
                 self.add_item(Button(style=discord.ButtonStyle.blurple, row=i))
                 self.children[-1].value = (i + 5*self.index, j)
 
-    def assign(self, values: list[int]):
-        button: Button
-        for i, button in enumerate(self.children):
-            button.value = values[i]
-
     async def update(self, **kwargs):
         '''
         Edit self.message
@@ -63,7 +59,7 @@ class Minesweeper():
         self.views: list[MinesweeperView] = None
 
         self.grid = None
-        self.flag = False
+        self.dug = 0
 
     async def start(self):
         self.views = [MinesweeperView(index=0), MinesweeperView(index=1)]
@@ -85,7 +81,7 @@ class Minesweeper():
 
     def set_mines(self, first_pos = tuple[int, int]):
         count = 0
-        while count < 8:
+        while count < NUM_MINES:
             val = random.randint(0, 49)
 
             r = val // 5
@@ -140,13 +136,15 @@ class Minesweeper():
 
         r, col = button.value
 
-        if self.flag:
-            pass
-
         if self.grid[r][col] == -1:
-            pass
+            await self.lose(button=button, interaction=interaction)
+            return
 
         self.dig(r, col)
+
+        if self.dug == 50 - NUM_MINES:
+            await self.win(button=button, interaction=interaction)
+            return
 
         view = self.views[0] if self.views[0] != button.view else self.views[1]
         await interaction.response.edit_message(view=button.view)
@@ -160,6 +158,7 @@ class Minesweeper():
             
         button.style = discord.ButtonStyle.grey
         button.disabled = True
+        self.dug += 1
 
         if self.grid[r][col] == 0:
             # check up
@@ -190,5 +189,39 @@ class Minesweeper():
         else:
             button.label = str(self.grid[r][col])
 
-    def game_over(self):
-        pass
+    async def win(self, button: Button, interaction: discord.Interaction):
+        for view in self.views:
+            b: Button
+            for b in view.children:
+                if b.disabled:
+                    b.style = discord.ButtonStyle.green
+                else:
+                    b.style = discord.ButtonStyle.grey
+                b.disabled = True
+
+        view = self.views[0] if self.views[0] != button.view else self.views[1]
+        await interaction.response.edit_message(view=button.view)
+        await view.update()
+        await self.game_over()
+
+    async def lose(self, button: Button, interaction: discord.Interaction):
+        for view in self.views:
+            b: Button
+            for b in view.children:
+                if self.grid[b.value[0]][b.value[1]] == -1:
+                    b.style = discord.ButtonStyle.red
+                    b.label = "💣"
+                b.disabled = True
+
+        view = self.views[0] if self.views[0] != button.view else self.views[1]
+        await interaction.response.edit_message(view=button.view)
+        await view.update()
+        await self.game_over()
+
+    async def game_over(self):
+        for view in self.views:
+            button: Button
+            for button in view.children:
+                button.disabled = True
+            await view.update()
+            view.stop()
