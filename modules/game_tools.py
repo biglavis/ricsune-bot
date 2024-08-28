@@ -28,7 +28,7 @@ class MinesweeperView(discord.ui.View):
         self.generate(rows=5, columns=5)
 
     async def on_timeout(self):
-        await self.controller.completed()
+        await self.controller.game_over()
 
     def generate(self, rows: int, columns: int):
         '''
@@ -48,10 +48,10 @@ class MinesweeperView(discord.ui.View):
         self.message = await self.message.edit(**kwargs)
 
     async def interacted(self, button: Button, interaction: discord.Interaction):
-            '''
-            Button interaction callback.
-            '''
-            await self.controller.interacted(button=button, interaction=interaction)
+        '''
+        Button interaction callback.
+        '''
+        await self.controller.interacted(button=button, interaction=interaction)
 
 class Minesweeper():
     def __init__(self, ctx: commands.Context):
@@ -59,7 +59,11 @@ class Minesweeper():
         self.views: list[MinesweeperView] = None
 
         self.grid = None
-        self.dug = 0
+        self.flagging = False
+        self.flags = 8
+        self.digs = 0
+
+        self.finished = False
 
     async def start(self):
         self.views = [MinesweeperView(index=0), MinesweeperView(index=1)]
@@ -67,10 +71,16 @@ class Minesweeper():
         self.views[0].controller = self
         self.views[1].controller = self
 
-        self.views[0].message = await self.ctx.send(view=self.views[0])
+        self.views[0].message = await self.ctx.send(content=f"`🙂   🚩 {self.flags}   [Clicking]`", view=self.views[0])
         self.views[1].message = await self.ctx.send(view=self.views[1])
 
+        await self.views[1].message.add_reaction("👆")
+        await self.views[1].message.add_reaction("🚩")
+
     def generate(self, first_pos = tuple[int, int]):
+        '''
+        Generates grid.
+        '''
         while True:
             self.grid = [[0,0,0,0,0] for _ in range(10)]
             self.set_mines(first_pos=first_pos)
@@ -80,6 +90,9 @@ class Minesweeper():
                 return
 
     def set_mines(self, first_pos = tuple[int, int]):
+        '''
+        Places mines.
+        '''
         count = 0
         while count < NUM_MINES:
             val = random.randint(0, 49)
@@ -92,6 +105,9 @@ class Minesweeper():
                 count += 1
 
     def set_values(self):
+        '''
+        Determines the values for each sqaure.
+        '''
         for r in range(10):
             for col in range(5):
                 # skip if mine
@@ -123,6 +139,47 @@ class Minesweeper():
                 if r < 9 and col < 4 and self.grid[r+1][col+1] == -1:
                     self.grid[r][col] += 1
 
+    async def on_reaction(self, reaction: discord.Reaction, user: discord.Member):
+        '''
+        Reaction callback.
+        '''
+        if self.finished:
+            return
+        
+        if reaction.message.id != self.views[1].message.id:
+            await reaction.remove(user)
+            return
+        
+        if user.id != self.ctx.author.id:
+            await reaction.remove(user)
+            return
+        
+        if reaction.emoji == "🚩" and not self.flagging:
+            self.flagging = True
+
+            for view in self.views:
+                button: Button
+                for button in view.children:
+                    if button.label == "🚩":
+                        button.disabled = False
+
+            await self.views[0].update(content=f"`🙂   🚩 {self.flags}   [Flagging]`")
+            await self.views[1].update()
+
+        elif reaction.emoji == "👆" and self.flagging:
+            self.flagging = False
+
+            for view in self.views:
+                button: Button
+                for button in view.children:
+                    if button.label == "🚩":
+                        button.disabled = True
+
+            await self.views[0].update(content=f"`🙂   🚩 {self.flags}   [Clicking]`")
+            await self.views[1].update()
+
+        await reaction.remove(user)
+
     async def interacted(self, button: Button, interaction: discord.Interaction):
         '''
         Button interaction callback.
@@ -131,19 +188,33 @@ class Minesweeper():
             await interaction.response.defer()
             return
         
-        if not self.grid:
+        if not self.grid and not self.flagging:
+            # remove flags on first dig
+            self.flags = 8
+            for view in self.views:
+                b: Button
+                for b in view.children:
+                    b.label = "\u200b"
+                    b.disabled = False
+
             self.generate(first_pos=button.value)
 
         r, col = button.value
 
+        if self.flagging:
+            await self.flag(button=button, interaction=interaction)
+            return
+
         if self.grid[r][col] == -1:
-            await self.lose(button=button, interaction=interaction)
+            await interaction.response.defer()
+            await self.lose()
             return
 
         self.dig(r, col)
 
-        if self.dug == 50 - NUM_MINES:
-            await self.win(button=button, interaction=interaction)
+        if self.digs == 50 - NUM_MINES:
+            await interaction.response.defer()
+            await self.win()
             return
 
         view = self.views[0] if self.views[0] != button.view else self.views[1]
@@ -158,7 +229,7 @@ class Minesweeper():
             
         button.style = discord.ButtonStyle.grey
         button.disabled = True
-        self.dug += 1
+        self.digs += 1
 
         if self.grid[r][col] == 0:
             # check up
@@ -189,33 +260,45 @@ class Minesweeper():
         else:
             button.label = str(self.grid[r][col])
 
-    async def win(self, button: Button, interaction: discord.Interaction):
-        for view in self.views:
-            b: Button
-            for b in view.children:
-                if b.disabled:
-                    b.style = discord.ButtonStyle.green
-                else:
-                    b.style = discord.ButtonStyle.grey
-                b.disabled = True
+    async def flag(self, button: Button, interaction: discord.Interaction):
+        if button.label != "🚩":
+            button.label = "🚩"
+            self.flags -= 1
 
-        view = self.views[0] if self.views[0] != button.view else self.views[1]
+        else:
+            button.label = "\u200b"
+            self.flags += 1
+
+        await self.views[0].update(content=f"`🙂   🚩 {self.flags}   [Flagging]`")
         await interaction.response.edit_message(view=button.view)
-        await view.update()
+
+    async def win(self):
+        for view in self.views:
+            button: Button
+            for button in view.children:
+                if button.disabled and button.label != "🚩":
+                    button.style = discord.ButtonStyle.green
+                else:
+                    button.style = discord.ButtonStyle.grey
+                button.disabled = True
+
+        await self.views[0].update(content=f"`🥳   🚩 {self.flags}   [Clicking]`")
+        await self.views[1].update()
+
         await self.game_over()
 
-    async def lose(self, button: Button, interaction: discord.Interaction):
+    async def lose(self):
         for view in self.views:
-            b: Button
-            for b in view.children:
-                if self.grid[b.value[0]][b.value[1]] == -1:
-                    b.style = discord.ButtonStyle.red
-                    b.label = "💣"
-                b.disabled = True
+            button: Button
+            for button in view.children:
+                if self.grid[button.value[0]][button.value[1]] == -1:
+                    button.style = discord.ButtonStyle.red
+                    button.label = "💣"
+                button.disabled = True
 
-        view = self.views[0] if self.views[0] != button.view else self.views[1]
-        await interaction.response.edit_message(view=button.view)
-        await view.update()
+        await self.views[0].update(content=f"`💀   🚩 {self.flags}   [Clicking]`")
+        await self.views[1].update()
+
         await self.game_over()
 
     async def game_over(self):
@@ -225,3 +308,6 @@ class Minesweeper():
                 button.disabled = True
             await view.update()
             view.stop()
+
+        self.views = None
+        self.finished = True
