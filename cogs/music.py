@@ -152,12 +152,12 @@ class MusicCog(commands.Cog):
         if not (ctx.guild.voice_client in self.bot.voice_clients and ctx.voice_client.is_playing()):
             return
         
+        ctx.voice_client.stop()
+        
         embed = discord.Embed(description=f"Skipped **[{self.now_playing['title']}]({self.now_playing['url']}) ({parse(self.now_playing['duration'])})**")
         embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
 
         await ctx.send(embed=embed)
-
-        ctx.voice_client.stop()
 
     @commands.hybrid_command(brief="Mic drop.", description="Mic drop.")
     async def stop(self, ctx: commands.Context):
