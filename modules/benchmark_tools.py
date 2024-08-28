@@ -263,6 +263,8 @@ class Chimp():
         await self.view.update(content=None, embed=embed, view=None)
         self.view.stop()
 
+        self.view = None
+
 # Visual Memory
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -521,6 +523,8 @@ class Squares():
         for view in self.views:
             view.stop()
 
+        self.views = None
+
 # Sequence Memory
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -708,3 +712,5 @@ class Sequence():
 
         await self.view.update(content=None, embed=embed, view=None)
         self.view.stop()
+
+        self.views = None
