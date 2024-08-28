@@ -66,7 +66,7 @@ class Minesweeper():
         self.finished = False
 
     async def start(self):
-        self.views = [MinesweeperView(index=0), MinesweeperView(index=1)]
+        self.views = [MinesweeperView(index=0), MinesweeperView(index=1, timeout=None)]
 
         self.views[0].controller = self
         self.views[1].controller = self
