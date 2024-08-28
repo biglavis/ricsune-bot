@@ -351,7 +351,7 @@ class Squares():
         '''
         Start the visual memory test.
         '''
-        self.views = [SquaresView(), SquaresView()]
+        self.views = [SquaresView(), SquaresView(timeout=None)]
 
         self.views[0].controller = self
         self.views[1].controller = self
