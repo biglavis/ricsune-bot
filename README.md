@@ -6,4 +6,6 @@ Just another Discord bot.
 - Music
 - LoL stats
 - Team randomizer
+- Human benchmark
+- Minesweeper
 - Other useful tools
