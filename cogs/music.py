@@ -52,7 +52,8 @@ class MusicCog(commands.Cog):
 
             # search for video
             else:
-                videos = ydl.extract_info(f"ytsearch{MAX_SEARCH}:{song}", download=False)['entries']
+                if not(videos := ydl.extract_info(f"ytsearch{MAX_SEARCH}:{song}", download=False)['entries']):
+                    raise Exception("No search results.")
 
                 # list search results
                 description = ""
