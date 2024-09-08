@@ -48,7 +48,7 @@ class MusicCog(commands.Cog):
         with yt_dlp.YoutubeDL(YDL_SEARCH_OPTS) as ydl:
             # grab link
             if any(site in song for site in ["youtube.com/", "youtu.be/"]):
-                video = ydl.extract_info(f"ytsearch:{song}", download=False)['entries'][0]
+                video = ydl.extract_info(f"ytsearch:{song.split('&')[0]}", download=False)['entries'][0]
 
             # search for video
             else:
