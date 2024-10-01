@@ -52,20 +52,21 @@ class MusicCog(commands.Cog):
 
             # search for video
             else:
-                if not(videos := ydl.extract_info(f"ytsearch{MAX_SEARCH}:{song}", download=False)['entries']):
-                    raise Exception("No search results.")
+                async with ctx.channel.typing():
+                    if not(videos := ydl.extract_info(f"ytsearch{MAX_SEARCH}:{song}", download=False)['entries']):
+                        raise Exception("No search results.")
 
-                # list search results
-                description = ""
-                for i, video in enumerate(videos):
-                    description += f"`[{i+1}]` [{video['title']}]({video['url']}) ({parse(video['duration'])})\n"
-                    if i == MAX_RESULTS - 1:
-                        break
+                    # list search results
+                    description = ""
+                    for i, video in enumerate(videos):
+                        description += f"`[{i+1}]` [{video['title']}]({video['url']}) ({parse(video['duration'])})\n"
+                        if i == MAX_RESULTS - 1:
+                            break
 
-                embed = discord.Embed(title="Search Results:", description=description)
-                embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
+                    embed = discord.Embed(title="Search Results:", description=description)
+                    embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.display_avatar)
 
-                await ctx.send(embed=embed)
+                    await ctx.send(embed=embed)
 
                 # wait for response
                 def check(m: discord.Message): # checking if it's the same user and channel
@@ -113,7 +114,7 @@ class MusicCog(commands.Cog):
 
             # download audio
             with yt_dlp.YoutubeDL(YDL_DOWNLOAD_OPTS) as ydl:
-                ydl.extract_info(self.now_playing['url'])
+                ydl.download(self.now_playing['url'])
 
             # play
             ctx.voice_client.play(discord.FFmpegPCMAudio(f"./downloads/{self.now_playing['id']}.m4a"), after=lambda _: self.bot.loop.create_task(self.play_next(ctx)))
@@ -165,7 +166,15 @@ class MusicCog(commands.Cog):
         self.queue = []
         if ctx.guild.voice_client in self.bot.voice_clients:
             await ctx.voice_client.disconnect()
-    
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        if (before.channel and
+            len(before.channel.members) == 1 and
+            before.channel.members[0].id == self.bot.user.id):
+            
+            await member.guild.voice_client.disconnect()
+
 async def error(ctx: commands.Context, description: str):
     embed = discord.Embed(title="Woops...", description=description)
     embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.display_avatar)
