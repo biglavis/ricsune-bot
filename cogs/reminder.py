@@ -63,7 +63,7 @@ class ReminderCog(commands.Cog):
 
         # parse reminder
         try:
-            time, task = parse_time(string, now)
+            time, task = parse_time(string)
         except:
             examples = ("/remindme in 2h30m drink water\n"
                         "/remindme at 5pm on sept 21\n"
@@ -72,8 +72,7 @@ class ReminderCog(commands.Cog):
                         "/remindme tmr 8am kiss the homies\n")
 
             units = ("```y : years | mo : months | w : weeks | d : days\n"
-                     "h : hours | m : minutes | s : seconds```"
-                    )
+                     "h : hours | m : minutes | s : seconds```")
 
             embed = discord.Embed(title="Woops...", description="Invalid syntax.")
             embed.add_field(name="Pre (Optional)", value="in?\nat?\non?\non?", inline=True)

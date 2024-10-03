@@ -3,7 +3,9 @@ import datetime
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
-def parse_time(string: str, time_ref: datetime.datetime = datetime.datetime.now(datetime.timezone.utc).astimezone()):
+now : datetime.datetime = None
+
+def parse_time(string: str):
     '''
     Parses a string containing a date/time/timedelta.
 
@@ -11,11 +13,14 @@ def parse_time(string: str, time_ref: datetime.datetime = datetime.datetime.now(
         :class:`datetime`: time relative to the reference time.
         :class:`string`: remaining string.
     '''
+    global now 
+    now = datetime.datetime.now(datetime.timezone.utc).astimezone()
+
     time_dict = {'month': None, 'day': None, 'year': None, 'hour': None, 'minute': None, 'period': None, 'weekday': None}
 
     # match timedelta
     if match := match_timedelta(string):
-        return time_ref + match[0], match[1].replace('\n', ' ').strip()
+        return now + match[0], match[1].replace('\n', ' ').strip()
     
     # match date/time/weekday
     while (match := match_date(string)) or (match := match_time(string)) or (match := match_weekday(string)):
@@ -24,9 +29,7 @@ def parse_time(string: str, time_ref: datetime.datetime = datetime.datetime.now(
 
     # if date/time/weekday was matched
     if not all(value == None for value in time_dict.values()):
-        if time_dict['weekday'] == 'tmr':
-            time_dict['weekday'] = time_ref.weekday() + 1
-        date = interpret_time(**time_dict, time_ref=time_ref)
+        date = interpret_time(**time_dict)
         
     else:
         raise ValueError("Invalid string format.")
@@ -61,8 +64,8 @@ def parse(string: str):
         'sat': 5,
         'sun': 6,
 
-        'tmr': 'tmr',
-        'tom': 'tmr'
+        'tmr': now.weekday() + 1,
+        'tom': now.weekday() + 1
     }
 
     if string == None:
@@ -178,30 +181,28 @@ def to_timedelta(amount, unit):
         elif unit == 'years':
             return relativedelta(years=+int(amount), days=+int(365*(amount%1)))
         else:
-            return timedelta(**dict({unit: amount}))
+            return timedelta(**{unit: amount})
 
     else:
         raise ValueError("Invalid unit.")
     
 def interpret_time(month: int = None, day: int = None, year: int = None, 
-                   hour: int = None, minute: int = None, period: str = None,
-                   weekday: int = None, 
-                   time_ref: datetime.datetime = datetime.datetime.now(datetime.timezone.utc).astimezone()):
+                   hour: int = None, minute: int = None, period: str = None, weekday: int = None):
     '''
     Returns the earliest possible date with the given time information.
     
-    Date is determined with respect to the refernce time (default: `datetime.datetime.now()`).
+    Date is determined with respect to the current time.
 
     If hour/minute/period is not given, default is 12:00 AM.
 
     Returns
-        :class:`datetime.datetime`: time relative to the reference time.
+        :class:`datetime.datetime`: time relative to current time.
     '''
     
     loc = locals()
     time_dict = {i: loc[i] for i in ('year', 'month', 'day', 'hour', 'minute')}
 
-    date = midnight(time_ref).replace(**{i: time_dict[i] for i in time_dict if time_dict[i] != None}) + relativedelta(weekday=weekday)
+    date = midnight().replace(**{i: time_dict[i] for i in time_dict if time_dict[i] != None}) + relativedelta(weekday=weekday)
 
     # apply corrections
     if period == 'am' and date.hour in range(12, 24):
@@ -209,12 +210,12 @@ def interpret_time(month: int = None, day: int = None, year: int = None,
     elif period == 'pm' and date.hour in range(0, 12):
         date += timedelta(hours=12)
 
-    if date <= time_ref:
-        if period == None and date + timedelta(hours=12) > time_ref:
+    if date <= now:
+        if period == None and date + timedelta(hours=12) > now:
             date += timedelta(hours=12)
-        elif day == None and date + timedelta(days=1) > time_ref:
+        elif day == None and date + timedelta(days=1) > now:
             date += timedelta(days=1)
-        elif month == None and date + relativedelta(months=+1) > time_ref:
+        elif month == None and date + relativedelta(months=+1) > now:
             date += relativedelta(months=+1)
         elif year == None:
             date += relativedelta(years=1)
@@ -233,11 +234,8 @@ def to_float(string):
     except:
         return None
     
-def midnight(time_ref: datetime.datetime = datetime.datetime.now(datetime.timezone.utc).astimezone()):
-    '''
-    Returns a :class:`datetime.datetime` object with the given time at midnight.
-    '''
-    return datetime.datetime.combine(time_ref.date(), datetime.time(tzinfo=time_ref.tzinfo))
+def midnight():
+    return datetime.datetime.combine(now.date(), datetime.time(tzinfo=now.tzinfo))
 
 def time_diff(t1: datetime.time, t2: datetime.time):
     '''
