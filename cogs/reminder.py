@@ -271,31 +271,26 @@ class ReminderCog(commands.Cog):
         # reminders are sorted by time
         # for each user, check top reminder
         for id in self.db:
-            if len(self.db[id]) == 0:
-                pass
-            else:
-                reminder = self.db[id][0]
+            if self.db[id] and (reminder := self.db[id][0])['time'] <= now:
+                author = await self.bot.fetch_user(int(id))
 
-                if reminder['time'] <= now:
-                    author = await self.bot.fetch_user(int(id))
+                if reminder['task'] != "":
+                    embed = discord.Embed(title="Reminder", description=f'> *{reminder["task"]}*', timestamp=reminder["created"])
+                else:
+                    embed = discord.Embed(title="Reminder", timestamp=reminder["created"])
 
-                    if reminder['task'] != "":
-                        embed = discord.Embed(title="Reminder", description=f'> *{reminder["task"]}*', timestamp=reminder["created"])
-                    else:
-                        embed = discord.Embed(title="Reminder", timestamp=reminder["created"])
+                embed.add_field(name="Original Message", value=reminder['url'])
+                embed.set_footer(text=f'{author.display_name}', icon_url=author.display_avatar)
 
-                    embed.add_field(name="Original Message", value=reminder['url'])
-                    embed.set_footer(text=f'{author.display_name}', icon_url=author.display_avatar)
+                # send reminder
+                await author.send(embed=embed)
 
-                    # send reminder
-                    await author.send(embed=embed)
+                # delete reminder
+                self.db[id].remove(reminder)
 
-                    # delete reminder
-                    self.db[id].remove(reminder)
-
-                    # save reminders
-                    with open(JSON_PATH, 'w') as f:
-                        json.dump(self.db, f, indent=4, default=str)
+                # save reminders
+                with open(JSON_PATH, 'w') as f:
+                    json.dump(self.db, f, indent=4, default=str)
 
     @remind.before_loop
     async def before_remind(self):
