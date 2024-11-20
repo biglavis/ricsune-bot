@@ -114,11 +114,12 @@ class ToolCog(commands.Cog):
             # sort descending
             users = dict(sorted(users.items(), key=lambda item: item[1]['sent'], reverse=True))
 
-            description = ""
+            value = ""
             for id in users:
-                description += f"<@{id}>: {users[id]['sent']}\n"
+                value += f"<@{id}>: {users[id]['sent']}\n"
 
-            embed=discord.Embed(title="Messages Sent", description=description)
+            embed=discord.Embed(title="Messages Sent")
+            embed.add_field(name=f"Last {limit} messages...", value=value)
             embed.set_image(url="attachment://history.png")
 
             # group users < 5%
